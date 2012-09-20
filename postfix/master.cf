@@ -119,8 +119,12 @@ mailman   unix  -       n       n       -       -       pipe
 #               - main      : main bounce  
 #               - jail      : test bounce
 #       
-paloma unix  -       n       n       -       -       pipe
-  flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py /home/hdknr/ve/tact/src/paloma/example/app main $sender $recipient
-jail   unix  -       n       n       -       -       pipe
-  flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py /home/hdknr/ve/tact/src/paloma/example/app jail $sender $recipient
+#paloma unix  -       n       n       -       -       pipe
+#  flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py /home/hdknr/ve/tact/src/paloma/example/app main $sender $recipient
+#jail   unix  -       n       n       -       -       pipe
+#  flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py /home/hdknr/ve/tact/src/paloma/example/app jail $sender $recipient
 
+paloma unix  -       n       n       -       -       pipe
+  flags=FDRq user=hdknr argv=/home/hdknr/ve/ynotaste/bin/paloma_bouncer.py /home/hdknr/ve/ynotaste/src/ynotaste/web/app main $sender $recipient --settings=app.settings.dev
+jail   unix  -       n       n       -       -       pipe
+  flags=FDRq user=hdknr argv=/home/hdknr/ve/ynotaste/bin/paloma_bouncer.py /home/hdknr/ve/ynotaste/src/ynotaste/web/app jail $sender $recipient --settings=app.settings.dev
