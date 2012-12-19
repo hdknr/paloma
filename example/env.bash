@@ -1,34 +1,36 @@
 #!/bin/bash
 PORT=9000
+DJANGO="python manage.py"
+SRC=../src
 
 DJRUN()
 {
-    python ../manage.py runserver 0.0.0.0:$PORT
+    $DJANGO runserver 0.0.0.0:$PORT
 }
 
 DJSYNC()
 {
-    python ../manage.py syncdb
+    $DJANGO syncdb
 }
 DJSHELL()
 {
-    python ../manage.py shell
+    $DJANGO shell
 }
 
 DJDB()
 {
-    python ../manage.py dbshell
+    $DJANGO dbshell
 }
 
 DJDUMP_PALOMA()
 {
-    python ../manage.py dumpdata --indent=2 $1  > ../../src/paloma/fixtures/$2/$1.json
+    $DJANGO dumpdata --indent=2 $1  > $SRC/paloma/fixtures/$2/$1.json
 }
 
 
 TESTMAIL()
 {
-    python ../manage.py mail send --file ../../src/paloma/fixtures/test.eml
+    $DJANGO  mail send --file $SRC/paloma/fixtures/test.eml
 }
 CI_LOG()
 {
@@ -36,11 +38,11 @@ CI_LOG()
 }
 CI_SCHEDULED()
 {
-    python ../manage.py celery inspect scheduled
+    $DJANGO  celery inspect scheduled
 }
 CI_REVOKED()
 {
-    python ../manage.py celery inspect revoked
+    $DJANGO  celery inspect revoked
 }
 CI_RESTART()
 {
@@ -55,5 +57,5 @@ CI_LOG()
 }
 PL_WITHDRAW()
 {
-    python ../manage.py membership withdraw --username=$1
+    $DJANGO membership withdraw --username=$1
 }
