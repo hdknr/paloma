@@ -14,12 +14,12 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'paloma',                      # Or path to database file if using sqlite3.
-        'USER': 'paloma',                      # Not used with sqlite3.
-        'PASSWORD': 'paloma',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('PALOMA_DEFAULT_DBNAME''paloma'),
+        'USER': os.environ.get('PALOMA_DEFAULT_DBUSER''paloma'),
+        'PASSWORD':os.environ.get('PALOMA_DEFAULT_DBPASSWORD''paloma'),
+        'HOST': '',                      
+        'PORT': '',                     
         'TEST_CHARSET': 'utf8',
         'TEST_DATABASE_COLLATION': 'utf8_general_ci',
     }

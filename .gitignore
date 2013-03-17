@@ -11,4 +11,5 @@ run
 app.log*
 *.db
 *.DS_Store
+env.dev.bash
 
