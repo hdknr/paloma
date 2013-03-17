@@ -123,10 +123,8 @@ ROOT_URLCONF = 'app.urls'
 WSGI_APPLICATION = 'app.wsgi.application'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    os.path.join(PROJECT_DIR,'templates'),
+    os.path.join(PROJECT_DIR,'templates'),      # html
+    os.path.join(PROJECT_DIR,'conf'),           # configuration file
 )
 
 INSTALLED_APPS = (

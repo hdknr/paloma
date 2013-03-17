@@ -1,0 +1,5 @@
+user = {{ PALOMA_DEFAULT_DBUSER }}
+password = {{ PALOMA_DEFAULT_DBUSER }}
+dbname = {{ PALOMA_DEFAULT_DBNAME}}
+hosts = {{ PALOMA_HOST }}
+query = SELECT alias FROM paloma_alias WHERE address ='%s' and alias is not null
