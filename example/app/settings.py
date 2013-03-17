@@ -15,9 +15,9 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('PALOMA_DEFAULT_DBNAME''paloma'),
-        'USER': os.environ.get('PALOMA_DEFAULT_DBUSER''paloma'),
-        'PASSWORD':os.environ.get('PALOMA_DEFAULT_DBPASSWORD''paloma'),
+        'NAME': os.environ.get('PALOMA_DEFAULT_DBNAME','paloma'),
+        'USER': os.environ.get('PALOMA_DEFAULT_DBUSER','paloma'),
+        'PASSWORD':os.environ.get('PALOMA_DEFAULT_DBPASSWORD','paloma'),
         'HOST': '',                      
         'PORT': '',                     
         'TEST_CHARSET': 'utf8',
