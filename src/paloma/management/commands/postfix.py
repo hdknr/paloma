@@ -7,31 +7,15 @@ from datetime import datetime
 import commands
 import os
 
-class Command(BaseCommand):
+from paloma.management.commands import GenericCommand
+
+class Command(GenericCommand):
     ''' paloma postfix management
     '''
     args = ''
     help = ''
 
-    option_list = BaseCommand.option_list + (
-
-        make_option('--command',
-            action='store',
-            dest='command',
-            default='help',
-            help=u'sub command'),
-
-        make_option('--id',
-            action='store',
-            dest='id',
-            default='help',
-            help=u'message id'),
-
-        make_option('--encoding',
-            action='store',
-            dest='encoding',
-            default='utf-8',
-            help=u'encoding'),
+    option_list = GenericCommand.option_list + (
         )
     ''' Command Option '''
 
@@ -62,7 +46,6 @@ class Command(BaseCommand):
         options['id']= options['id'].replace('*','')
         print commands.getoutput('sudo  postsuper -d %(id)s' % options )
         
-    def handle_help(self,*args,**options):
         '''  help
         '''
         import re
@@ -72,8 +55,10 @@ class Command(BaseCommand):
                 continue
             print m.group(1)
 
-    def handle(self  ,*args, **options):
         '''  command main '''
 
         getattr(self, 'handle_%s'% options['command'],Command.handle_help)(*args,**options)
 
+   def handle_config(self,*args,**options):
+        from django.conf import settings 
+        print settings.DATABASES
