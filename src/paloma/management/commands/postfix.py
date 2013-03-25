@@ -73,7 +73,7 @@ class Command(GenericCommand):
             default= JAIL,
             help=u'Postfix Default Transport'),
 
-            make_option('--doamin-transport',
+            make_option('--domain-transport',
             action='store',
             dest='domain-transport',
             default= MAIN,
@@ -138,6 +138,13 @@ class Command(GenericCommand):
             )
             conf_file.close()
 
+    def handle_print_transport(self,*args,**options):
+        ''' print transport configuration for master.cf
+        '''
+        context = self.provide_context(*args,**options)
+        
+        print render_to_string("conf/%s/transport.cf" % (options['postfix-path'],),context)
+
     def handle_setconfig(self,*args,**options):
         context = self.provide_context(*args,**options)
 
@@ -170,6 +177,7 @@ class Command(GenericCommand):
         context['DEFAULT_TRANSPORT'] = options['default-transport']
         context['DOMAIN_TRANSPORT'] = options['domain-transport']
         context['BOUNCER'] = BOUNCER
+        context['USER'] = options['user']
 
         #:MySQL database configuration
         for k,v in settings.DATABASES[options['postfix-database']].items():
