@@ -12,13 +12,19 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+#: Postfix master.cf doesn't seems to load environment variables
+#:
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('PALOMA_DEFAULT_DBNAME','paloma'),
-        'USER': os.environ.get('PALOMA_DEFAULT_DBUSER','paloma'),
-        'PASSWORD':os.environ.get('PALOMA_DEFAULT_DBPASSWORD','paloma'),
-        'HOST': os.environ.get('PALOMA_DEFAULT_DBHOST','localhost'),
+#        'NAME': os.environ.get('PALOMA_DEFAULT_DBNAME','paloma'),
+#        'USER': os.environ.get('PALOMA_DEFAULT_DBUSER','paloma'),
+#        'PASSWORD':os.environ.get('PALOMA_DEFAULT_DBPASSWORD','paloma'),
+#        'HOST': os.environ.get('PALOMA_DEFAULT_DBHOST','localhost'),
+        'NAME': "paloma_dev",
+        'USER': "paloma_dev",
+        'PASSWORD':"paloma_dev",
+        'HOST': "localhost",
         'PORT': '',                     
         'TEST_CHARSET': 'utf8',
         'TEST_DATABASE_COLLATION': 'utf8_general_ci',
@@ -45,7 +51,7 @@ TIME_ZONE = 'Asia/Tokyo'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'js-jp'
+LANGUAGE_CODE = 'ja-jp'
 
 SITE_ID = 1
 

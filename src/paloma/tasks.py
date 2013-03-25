@@ -157,8 +157,55 @@ def ask_by_mail(recipient,sender,journal_id,key):
     print "Ask by Email"
 
 @task
+def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
+    """ recourde bounce mail
+    """
+    from models import Journal
+    log= bounce.get_logger()
+
+    log.debug('From=%s To %s (jailed=%s)'  % (sender,recipient,is_jailed) )
+
+    #: First of all, save messa to the Journal
+    journal=None
+    try:
+        journal=Journal( 
+            sender=sender,
+            recipient=recipient,
+            is_jailed=is_jailed,
+            text=text)
+        journal.save()
+    except Exception,e:
+        log.error( str(e) )
+    
+    return journal and journal.id
+
+@task
+def process_journal(sender,journal_id=None,*args,**kwargs):
+    """ main bounce woker
+    """
+    from models import Journal
+    log= bounce.get_logger()
+    try:
+        journal = journal or Journal.objecs.get(id = journal_id )
+    except Exception,e:
+        log.debug( str(e) )
+        return
+
+    if journal.is_jailed == True:
+        return
+
+    #:Error Mail Handler 
+    if process_error_mail(journal.recipient,journal.sender,journal.id):
+        log.debug("no error")
+        return  
+
+    #:EmailTask ( mail registraton ....  )
+    if enqueue_email_task(journal.recipient,journal.sender,journal.id):
+        log.debug("no mail command")
+        return
+@task
 def bounce(sender,recipient,text,is_jailed=False,*args,**kwawrs):
-    """ main bounce worker
+    """ main bounce worker (OLD)
     """
     from models import Journal
     log= bounce.get_logger()

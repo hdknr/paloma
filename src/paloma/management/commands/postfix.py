@@ -9,9 +9,11 @@ import commands
 import os
 
 from . import GenericCommand
+from ...models import Domain
 
-JAIL='jail'
-MAIN=getattr(settings,"PALOMA_NAME","paloma")
+
+DEFAULT_TRANSPORT ='jail'
+DOMAIN_TRANSPORT=getattr(settings,"PALOMA_NAME","paloma")
 POSTFIX_PATH='/etc/postfix'
 POSTFIX_VIRTUAL_PATH= '/etc/postfix/virtual'
 POSTFIX_CONF=['main.cf','master.cf',]
@@ -70,13 +72,13 @@ class Command(GenericCommand):
             make_option('--default-transport',
             action='store',
             dest='default-transport',
-            default= JAIL,
+            default= DEFAULT_TRANSPORT,
             help=u'Postfix Default Transport'),
 
             make_option('--domain-transport',
             action='store',
             dest='domain-transport',
-            default= MAIN,
+            default= DOMAIN_TRANSPORT,
             help=u'Postfix Acceptable Domains Transport'),
         )
     ''' Command Option '''
@@ -187,5 +189,18 @@ class Command(GenericCommand):
             #: Postfix Virtula Path
             context['MYSQL_%s' % c.split('.')[0].upper()] = os.path.join( POSTFIX_VIRTUAL_MYSQL_PATH,c)
 
-
         return context
+
+    def handle_add_domain(self,*args,**options):
+        ''' add hosted domain
+
+            - args[0] : domain name
+        '''
+        if len(args) <1:
+            print "Syntax for adding hosted domain"
+            print "manage.py postfix ",self.command, " [[hosted domain]] "
+            return
+
+        (new_domain ,created)= Domain.objects.get_or_create(
+                        domain=args[0], transport=options['domain-transport'])
+        print new_domain,created

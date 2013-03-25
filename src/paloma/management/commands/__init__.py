@@ -35,6 +35,12 @@ class GenericCommand(BaseCommand):
             default='stdin',
             help=u'flle'),
 
+        make_option('--description',
+            action='store',
+            dest='description',
+            default=None,
+            help=u'Description'),
+
         make_option('--encoding',
             action='store',
             dest='encoding',

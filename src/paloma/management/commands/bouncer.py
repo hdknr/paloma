@@ -31,9 +31,11 @@ class Command(GenericCommand):
 
         is_jailed = options.get('is_jailed',False)
 
-        from paloma.tasks import bounce 
+        from paloma.tasks import journalize,process_journal,bounce 
+        jid = journalize(args[0],args[1],''.join(sys.stdin.read()),is_jailed ) #:message queuing
+        process_journal.delay(jid)
         #: defualt is async
-        bounce.delay(args[1],args[2],''.join(sys.stdin.read()),is_jailed ) #:message queuing
+#        bounce.delay(args[1],args[2],''.join(sys.stdin.read()),is_jailed ) #:message queuing
 
     def handle_jail(self,*args,**options):
         ''' jail'''
