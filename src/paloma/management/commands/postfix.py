@@ -116,7 +116,7 @@ class Command(GenericCommand):
                 continue
             print m.group(1)
 
-    def handle_config(self,*args,**options):
+    def handle_makeconfig(self,*args,**options):
         ''' create postfix configration files : /etc/postfix
         '''
         context = self.provide_context(*args,**options)
