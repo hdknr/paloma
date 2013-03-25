@@ -5,20 +5,20 @@ Note
 configure worker
 =====================
 
-run.py has configuration parameters for django-celery.
+workers.py has configuration parameters for django-celery.
 Define wrapper command argment to run django-celery propery
 
 ::
 
-    (paloma)hdknr@cats:~/ve/paloma/src/paloma/example/app$ vi run.py
+    (paloma)hdknr@cats:~/ve/paloma/src/paloma/example/app$ vi workers.py
 
 
-app.run
-----------
+app.workers
+----------------
 
-app.run.configure is called by paloma_worker.py command.
+app.workers.configure is called by paloma_worker.py command.
 
-.. automodule:: app.run
+.. automodule:: app.workers
     :members:
 
 runnsing celery worker
