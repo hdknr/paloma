@@ -1,5 +1,0 @@
-user = paloma
-password = paloma
-hosts = localhost
-dbname = paloma
-query = SELECT alias FROM paloma_alias WHERE address ='%s' and alias is not null
