@@ -32,51 +32,55 @@ Postfix MySQL virtual configutaiton of this sample uses the application database
 /etc/postfix configuration files
 ========================================================
 
-For quick, copy your original Postfix configuation to backup , ::
+For quick, run create configuration files
 
-    $ sudo mv main.cf main.cf.dist
-    $ sudo mv master.cf master.cf.dist
+.. code-block:: bash
 
-    -rw-r--r-- 1 root root 1239 2012-03-04 16:21 main.cf.dist
-    -rw-r--r-- 1 root root 5301 2012-03-04 16:21 master.cf.dist
+    $ python manage.py postfix makeconfig --user=hdknr
 
-And create symlinks for {{SOURCE}}/postfix/\*.cf files and **virtual** directory  
+where, "user" means that "bounce handler" runs specified user's previlege. 
 
-::
-  
-    (tact)hdknr@wzy:/etc/postfix$ sudo ln -s /home/hdknr/ve/tact/src/paloma/postfix/virtual 
-    (tact)hdknr@wzy:/etc/postfix$ sudo ln -s /home/hdknr/ve/tact/src/paloma/postfix/master.cf 
-    (tact)hdknr@wzy:/etc/postfix$ sudo ln -s /home/hdknr/ve/tact/src/paloma/postfix/main.cf
+that'll create following files
 
-::
+.. code-block:: bash
 
+    $ tree etc/
 
-    lrwxrwxrwx   1 root root    48 2012-04-01 10:24 main.cf -> /home/hdknr/ve/paloma/src/paloma/postfix/main.cf
-    lrwxrwxrwx   1 root root    50 2012-04-01 10:24 master.cf -> /home/hdknr/ve/paloma/src/paloma/postfix/master.cf
-    lrwxrwxrwx   1 root root    49 2012-04-01 10:41 virtual -> /home/hdknr/ve/paloma/src/paloma/postfix/virtual/
+    etc/
+    └── postfix
+        ├── main.cf
+        ├── master.cf
+        └── virtual
+            ├── alias.cf
+            ├── domain.cf
+            ├── mailbox.cf
+            ├── mysql
+            │   ├── alias.cf
+            │   ├── domain.cf
+            │   ├── mailbox.cf
+            │   └── transport.cf
+            └── transport.cf    
 
-Edit master.cf
-----------------------------
+Next, execute the followings to create symbolic links
 
-- change your paloma_bouncer.py script path 
-  and Django project path as the first arguemnt to the paloma_bouncer.py.
+.. code-block:: bash
 
-::
+    $ python manage.py postfix setconfig
 
-    paloma unix  -       n       n       -       -       pipe
-      flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py 
-      /home/hdknr/ve/tact/src/paloma/example/app main $sender $recipient
+goes ::
 
-    jail   unix  -       n       n       -       -       pipe
-      flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py
-      /home/hdknr/ve/tact/src/paloma/example/app jail $sender $recipient
+    $ ls -l /etc/postfix/ 
 
+    lrwxrwxrwx 1 root root    57  3月 25 18:02 main.cf -> /home/hdknr/ve/slu/src/paloma/example/etc/postfix/main.cf
+    lrwxrwxrwx 1 root root    59  3月 25 18:02 master.cf -> /home/hdknr/ve/slu/src/paloma/example/etc/postfix/master.cf
 
-Edit virtual/mysql/ files
------------------------------------------------
+and ::
 
-- change your database access infomation .
-- See `MYSQL_TABLE(5) <http://www.postfix.org/mysql_table.5.html>`_  for configure access information.
+    $ ls -l /etc/postfix/virtual/
+
+    合計 4
+    lrwxrwxrwx 1 root root 63  3月 25 11:30 mysql -> /home/hdknr/ve/slu/src/paloma/example/etc/postfix/virtual/mysql    
+
 
 /etc/hosts
 ============
@@ -91,31 +95,10 @@ Edit virtual/mysql/ files
 Add a Domain
 =============
 
-- Create a test domain. Use {{SOURCE}}/src/paloma/fixtures/ file or create one with Django Admin UI.
+.. code-block:: bash
 
-.. code-block:: javascript
+    $ python manage.py postfix add_domain paloma.com
 
-    [
-      {
-        "pk": 1, 
-        "model": "paloma.domain", 
-        "fields": {
-          "domain": "paloma.deb", 
-          "description": "paloma", 
-          "maxquota": null, 
-          "quota": null, 
-          "active": true, 
-          "backupmx": null, 
-          "transport": "paloma"
-        }
-      }
-    ]
-
-::
-
-    (tact)$ python ../manage.py loaddata ../../src/paloma/fixtures/fixture.paloma_domain.1.json 
-
-    Installed 1 object(s) from 1 fixture(s)
 
 Send a test mail
 ==================
