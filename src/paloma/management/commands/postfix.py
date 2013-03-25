@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from django.core.management.base import BaseCommand, CommandError
 from django.template.loader import render_to_string
 from django.conf import settings 
@@ -14,8 +13,9 @@ from . import GenericCommand
 JAIL='jail'
 MAIN=getattr(settings,"PALOMA_NAME","paloma")
 POSTFIX_PATH='/etc/postfix'
+POSTFIX_VIRTUAL_PATH= '/etc/postfix/virtual'
 POSTFIX_CONF=['main.cf','master.cf',]
-POSTFIX_VIRTUAL_MYSQL_PATH=os.path.join(POSTFIX_PATH,'virtual/mysql',)
+POSTFIX_VIRTUAL_MYSQL_PATH=os.path.join(POSTFIX_VIRTUAL_PATH,'mysql',)
 POSTFIX_VIRTUAL_MYSQL_CONF=[ 'alias.cf','domain.cf','mailbox.cf','transport.cf', ]
 
 BOUNCER=os.path.join( os.environ.get('VIRTUAL_ENV','') ,"bin/paloma_bouncer.py" )
@@ -34,7 +34,7 @@ class Command(GenericCommand):
             make_option('--virtual-path',
             action='store',
             dest='virtual-path',
-            default= POSTFIX_VIRTUAL_MYSQL_PATH,
+            default= POSTFIX_VIRTUAL_PATH,
             help=u'Postfix Virtual Path'),
 
             make_option('--postfix-database',
@@ -117,35 +117,15 @@ class Command(GenericCommand):
             print m.group(1)
 
     def handle_config(self,*args,**options):
-
-        context ={}
-        context['POSTFIX_PATH'] = os.path.join( os.path.abspath(options['conf-path']), 
-                        options['postfix-path'].replace('/','',1) )
-
-        context['VIRTUAL_PATH'] = os.path.join( os.path.abspath(options['conf-path']), 
-                        options['virtual-path'].replace('/','',1) )
-
-        if os.path.isdir( context['VIRTUAL_PATH'] ) ==False:
-            os.makedirs( context['VIRTUAL_PATH'] )
-
-        context['SETTINGS_MODULE'] = SETTINGS_MODULE 
-        context['PROJECT_DIR'] = PROJECT_DIR
-        context['DEFAULT_TRANSPORT'] = options['default-transport']
-        context['DOMAIN_TRANSPORT'] = options['domain-transport']
-        context['BOUNCER'] = BOUNCER
-
-        #:MySQL database configuration
-        for k,v in settings.DATABASES[options['postfix-database']].items():
-            context['DB%s' % k] = v
+        ''' create postfix configration files : /etc/postfix
+        '''
+        context = self.provide_context(*args,**options)
         
         for c in POSTFIX_VIRTUAL_MYSQL_CONF:
-            #: Postfix Virtula Path
-            context['MYSQL_%s' % c.split('.')[0].upper()] = os.path.join( options['virtual-path'],c)
-
             #: Generate Virtual Configuration
             conf_file = open( os.path.join( context['VIRTUAL_PATH'], c), "w")
             conf_file.write(  
-                render_to_string("conf/%s/%s" % (options['virtual-path'],c),context)
+                render_to_string("conf%s/mysql/%s" % (options['virtual-path'],c),context)
             )
             conf_file.close()
 
@@ -159,19 +139,31 @@ class Command(GenericCommand):
             conf_file.close()
 
     def handle_setconfig(self,*args,**options):
-        pass
+        context = self.provide_context(*args,**options)
+
+        import commands 
+        for c in POSTFIX_CONF:
+            #: Generate Virtual Configuration
+            print commands.getoutput("sudo ln -s %s %s --force" % ( os.path.join( context['POSTFIX_PATH'] , c), 
+                                    os.path.join( POSTFIX_PATH ,c)
+                                  ) )
+        print commands.getoutput("sudo mkdir -p %s" % POSTFIX_VIRTUAL_PATH ) 
+    
+        print commands.getoutput("sudo ln -s %s %s --force" % (context['VIRTUAL_MYSQL_PATH'] , POSTFIX_VIRTUAL_MYSQL_PATH ))
 
     def provide_context (self,*args,**options):
-
+        ''' create context dict
+        '''
         context ={}
         context['POSTFIX_PATH'] = os.path.join( os.path.abspath(options['conf-path']), 
                         options['postfix-path'].replace('/','',1) )
 
         context['VIRTUAL_PATH'] = os.path.join( os.path.abspath(options['conf-path']), 
                         options['virtual-path'].replace('/','',1) )
+        context['VIRTUAL_MYSQL_PATH'] =os.path.join( context['VIRTUAL_PATH'],'mysql' )
 
-        if os.path.isdir( context['VIRTUAL_PATH'] ) ==False:
-            os.makedirs( context['VIRTUAL_PATH'] )
+        if os.path.isdir( context['VIRTUAL_MYSQL_PATH'] ) ==False:
+            os.makedirs( context['VIRTUAL_MYSQL_PATH'] )
 
         context['SETTINGS_MODULE'] = SETTINGS_MODULE 
         context['PROJECT_DIR'] = PROJECT_DIR
@@ -185,7 +177,7 @@ class Command(GenericCommand):
         
         for c in POSTFIX_VIRTUAL_MYSQL_CONF:
             #: Postfix Virtula Path
-            context['MYSQL_%s' % c.split('.')[0].upper()] = os.path.join( options['virtual-path'],c)
+            context['MYSQL_%s' % c.split('.')[0].upper()] = os.path.join( POSTFIX_VIRTUAL_MYSQL_PATH,c)
 
 
         return context

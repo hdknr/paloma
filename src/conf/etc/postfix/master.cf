@@ -113,18 +113,17 @@ mailman   unix  -       n       n       -       -       pipe
 #   - jail   : test handler 
 #
 #   COMMAND SYNTAX::
-#       {{FULL PATH to paloma_bouncer.py}} {{FULL  PATH to paloma based django application}} {{SWITCH}} {{SENDER}} {{RECIPIENT}}
+#       %(FULL PATH to paloma_bouncer.py)% %(FULL  PATH to paloma based django application)% %(SWITCH)% %(SENDER)% %(RECIPIENT)%
 #      
-#       {{SWITCH}} 
+#       %(SWITCH)% 
 #               - main      : main bounce  
 #               - jail      : test bounce
 #       
-#paloma unix  -       n       n       -       -       pipe
-#  flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py /home/hdknr/ve/tact/src/paloma/example/app main $sender $recipient
-#jail   unix  -       n       n       -       -       pipe
-#  flags=FDRq user=hdknr argv=/home/hdknr/ve/tact/bin/paloma_bouncer.py /home/hdknr/ve/tact/src/paloma/example/app jail $sender $recipient
 
-paloma unix  -       n       n       -       -       pipe
-  flags=FDRq user={{ USER }} argv={{ BOUNCER }} {{ PROJECT_DIR }} main $sender $recipient --settings={{ SETTINGS_FILE }}
-jail   unix  -       n       n       -       -       pipe
-  flags=FDRq user={{ USER }} argv={{ BOUNCER }} {{ PROJECT_DIR }} jail $sender $recipient --settings={{ SETTINGS_FILE }}
+# Domain Bouncer
+{{ DOMAIN_TRANSPORT }} unix  -       n       n       -       -       pipe
+  flags=FDRq user={{ USER }} argv={{ BOUNCER }} {{ PROJECT_DIR }} main $sender $recipient --settings={{ SETTINGS_MODULE }}
+
+# Default Bouncer
+{{ DEFAULT_TRANSPORT }} unix  -       n       n       -       -       pipe
+  flags=FDRq user={{ USER }} argv={{ BOUNCER }} {{ PROJECT_DIR }} jail $sender $recipient --settings={{ SETTINGS_MODULE }}

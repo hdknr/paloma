@@ -4,6 +4,7 @@
 *.pid
 .egg-info
 docs/build/
+example/etc
 build
 dist
 src/paloma.egg-info

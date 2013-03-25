@@ -47,7 +47,7 @@ inet_interfaces = all
 # - captured this mail server transaport 
 #
 local_transport = local
-transport_maps = proxy:mysql:{{ MYSQL_TRANSORT }}
+transport_maps = proxy:mysql:{{ MYSQL_TRANSPORT }}
 virtual_transport = proxy:mysql:{{ MYSQL_TRANSPORT }}
 virtual_alias_maps = proxy:mysql:{{ MYSQL_ALIAS }}
 virtual_alias_domains = $virtual_alias_maps

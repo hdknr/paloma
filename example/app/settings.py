@@ -18,7 +18,7 @@ DATABASES = {
         'NAME': os.environ.get('PALOMA_DEFAULT_DBNAME','paloma'),
         'USER': os.environ.get('PALOMA_DEFAULT_DBUSER','paloma'),
         'PASSWORD':os.environ.get('PALOMA_DEFAULT_DBPASSWORD','paloma'),
-        'HOST': '',                      
+        'HOST': os.environ.get('PALOMA_DEFAULT_DBHOST','localhost'),
         'PORT': '',                     
         'TEST_CHARSET': 'utf8',
         'TEST_DATABASE_COLLATION': 'utf8_general_ci',
@@ -124,7 +124,6 @@ WSGI_APPLICATION = 'app.wsgi.application'
 
 TEMPLATE_DIRS = (
     os.path.join(PROJECT_DIR,'templates'),      # html
-    os.path.join(PROJECT_DIR,'conf'),           # configuration file
 )
 
 INSTALLED_APPS = (
@@ -207,12 +206,13 @@ djcelery.setup_loader()
 #
 INSTALLED_APPS +=('paloma',)  #: this project.
 #
-SMTP_EMAIL_BACKEND='paloma.backends.SmtpEmailBackend'
+PALOMA_NAME="mypaloma"          #: name for project
+SMTP_EMAIL_BACKEND='paloma.backends.SmtpEmailBackend' 
 #
 from kombu import Exchange, Queue
-CELERY_DEFAULT_QUEUE = 'paloma'
+CELERY_DEFAULT_QUEUE = PALOMA_NAME
 CELERY_QUEUES = ( 
-    Queue('paloma', Exchange('paloma'), routing_key='paloma'),
+    Queue(PALOMA_NAME, Exchange( PALOMA_NAME ), routing_key=PALOMA_NAME),
 )
 
 # - paloma for mail transfer agents
@@ -238,8 +238,4 @@ INSTALLED_APPS +=('django_extensions',)  #:  tools for django-extensions
 # - logging
 import applogs
 applogs.config(LOGGING)
-
-# - mandb for MySQL command shortcuts
-
-INSTALLED_APPS +=('mandb',)  #:  tools for MySQL
 

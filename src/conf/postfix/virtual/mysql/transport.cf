@@ -1,5 +1,0 @@
-user = {{ PALOMA_DEFAULT_DBUSER }}
-password = {{ PALOMA_DEFAULT_DBUSER }}
-dbname = {{ PALOMA_DEFAULT_DBNAME}}
-hosts = {{ PALOMA_HOST }}
-query = SELECT transport FROM paloma_domain WHERE domain='%s'

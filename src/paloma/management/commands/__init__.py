@@ -69,4 +69,4 @@ class GenericCommand(BaseCommand):
         if len(args) < 1 :
             return "a sub command must be specfied"
         self.command = args[0]
-        getattr(self, 'handle_%s'% self.command ,GenericCommand.handle_help)(*args,**options)
+        getattr(self, 'handle_%s'% self.command ,GenericCommand.handle_help)(*args[1:],**options)
