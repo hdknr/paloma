@@ -69,4 +69,5 @@ disable_dns_lookups = yes
 
 # - other domain goes to  this transapor in master.cf
 # ALL MAILS TO BE PROCESSED THIS TRANSPORT  
+# Drop `default_transport` if you want mails to be bounced back. 
 default_transport = {{ DEFAULT_TRANSPORT }}
