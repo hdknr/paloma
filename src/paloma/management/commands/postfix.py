@@ -125,7 +125,8 @@ class Command(GenericCommand):
         
         for c in POSTFIX_VIRTUAL_MYSQL_CONF:
             #: Generate Virtual Configuration
-            conf_file = open( os.path.join( context['VIRTUAL_PATH'], c), "w")
+            print "providing:", os.path.join( context['VIRTUAL_MYSQL_PATH'], c)
+            conf_file = open( os.path.join( context['VIRTUAL_MYSQL_PATH'], c), "w")
             conf_file.write(  
                 render_to_string("conf%s/mysql/%s" % (options['virtual-path'],c),context)
             )
@@ -184,6 +185,9 @@ class Command(GenericCommand):
         #:MySQL database configuration
         for k,v in settings.DATABASES[options['postfix-database']].items():
             context['DB%s' % k] = v
+
+        if context['DBHOST'] == '':
+            context['DBHOST'] ='localhost'
         
         for c in POSTFIX_VIRTUAL_MYSQL_CONF:
             #: Postfix Virtula Path
