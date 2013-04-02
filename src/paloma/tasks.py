@@ -13,7 +13,7 @@ from paloma.models import (
         default_return_path ,return_path_from_address
 )
 from paloma.mails import send_mail
-from paloma.actions import EnrollAction
+from paloma.actions import EnrollAction,process_action
 
 
 CONFIG = getattr(settings, 'PALOMA_EMAIL_TASK_CONFIG', {})
@@ -199,10 +199,9 @@ def process_journal(sender,journal_id=None,*args,**kwargs):
         log.debug("no error")
         return  
 
-    #:EmailTask ( mail registraton ....  )
-    if enqueue_email_task(journal.recipient,journal.sender,journal.id):
-        log.debug("no mail command")
-        return
+    #: actions
+    process_action(journal.sender, journal.recipent,journal)
+
 @task
 def bounce(sender,recipient,text,is_jailed=False,*args,**kwawrs):
     """ main bounce worker (OLD)
