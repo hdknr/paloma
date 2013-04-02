@@ -178,6 +178,22 @@ class EnrollAction(Action):
 
 
 #########
+
+def action(pattern,*dargs,**dkwargs):
+    ''' Action Decorator '''
+    def receive_func(func):
+        import functools
+        @functools.wraps(func)
+        def wrapper(sender,recipient,journal,*args, **kwargs):
+            try:
+                kwargs.update( re.search(pattern,recipient).groupdict() )
+            except Exception,e:
+                pass
+            result=func(sender,recipient,journal,*args, **kwargs)
+            return result
+        return wrapper
+    return receive_func
+
 _actions=[]
 
 def process_action(sender,recipient ,journal):
