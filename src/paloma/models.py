@@ -450,7 +450,7 @@ class AbstractProfile(models.Model):
 class Site(models.Model):
     ''' Site
     '''
-    name = models.CharField(u'Owner Name',max_length=100 ,db_index=True,unique=True)
+    name = models.CharField(u'Owner Site Name',max_length=100 ,db_index=True,unique=True)
     ''' Site Name '''
 
     domain= models.CharField(u'@Domain',max_length=100 ,db_index=True,unique=True)
@@ -458,7 +458,6 @@ class Site(models.Model):
 
     operators = models.ManyToManyField(User,verbose_name=u'Site Operators' )
     ''' Site Operators '''
-
 
     @property
     def default_circle(self):
