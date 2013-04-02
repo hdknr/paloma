@@ -667,6 +667,76 @@ class Mail(models.Model):
         return default_return_path( {"message_id" : self.id, 
                                     "domain": self.publish.site.domain } )
 
+class Provision(models.Model):  
+    ''' Account Provision management 
+
+    '''
+
+    member= models.OneToOneField(Member,verbose_name=u'Member' 
+                    ,on_delete =models.SET_NULL
+                    ,null=True,default=None,blank=True)
+    ''' Member'''
+
+    status = models.CharField(_(u"status"), 
+                            max_length=24,db_index=True,)
+    ''' Provisioning  Status'''
+
+    circle = models.ForeignKey(Circle,verbose_name=u'Circle' 
+                    ,null=True,default=None,blank=True,
+                    on_delete=models.SET_NULL)
+    ''' Circle'''
+
+    inviter= models.ForeignKey(User,verbose_name=u'Invite' 
+                    ,null=True,default=None,blank=True,
+                    on_delete=models.SET_NULL)
+    ''' Inviter'''
+
+    prospect = models.CharField(u'Prospect',max_length=100,default=None,null=True,blank=True)
+    ''' Prospect Email Address'''
+
+    secret= models.CharField(u'Secret',max_length=100,default=create_auto_secret,unique=True)
+    ''' Secret
+    '''
+    short_secret= models.CharField(u'Short Secret',max_length=10,default=create_auto_short_secret,
+                unique=True)
+    ''' Short Secret
+    '''
+
+    url = models.CharField(u'URL for notice',max_length=200,default=None,null=True,blank=True)
+    ''' URL for notice '''
+
+
+    dt_expire =   models.DateTimeField(u'Secrete Expired'  ,
+                                null=True, blank=True, default=None,
+                                help_text=u'Secrete Expired', )
+    ''' Secrete Expired'''
+
+    dt_try=  models.DateTimeField(u'Try Datetime'  ,
+                                null=True, blank=True, default=None,
+                                help_text=u'Try Datetime', )
+    ''' Try Datetime'''
+
+    dt_commit=  models.DateTimeField(u'Commit Datetime'  ,
+                                null=True, blank=True, default=None,
+                                help_text=u'Commit Datetime', )
+    ''' Commit Datetime'''
+    
+    def is_open(self,dt_now=None):
+        ''' check if this is open status or not
+        '''
+        dt_now =dt_now if dt_now else now()
+
+        return  ( self.dt_commit == None ) and \
+                ( self.dt_expire > dt_now ) and  \
+                ( self.mailbox != None ) and  \
+                ( self.group != None )
+         
+    def close(self):
+        ''' close this enroll management
+        '''
+        self.dt_commit = now()
+        self.save()
+
 ####
 class JournalManager(models.Manager):
     ''' Message Manager'''
