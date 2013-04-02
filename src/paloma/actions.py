@@ -172,3 +172,21 @@ class EnrollAction(Action):
         ret.close()
 
         return ret
+
+
+
+
+
+#########
+_actions=[]
+
+def process_action(sender,recipient ,journal):
+    '''
+    '''
+    for action in _actions: 
+        ret = action(sender,recipient,journal )
+        if ret: 
+            break;        
+
+def register_action(action):
+    _actions.append(action)

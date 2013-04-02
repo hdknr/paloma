@@ -95,4 +95,7 @@ class Promotion(AbstractProfile):
 class GoldPromotion(AbstractProfile):
     schedule= models.OneToOneField(Schedule,verbose_name=u'Promotion Scheudle')
     ''' Promotion Schedule'''
-    
+
+
+import actions
+actions.register()

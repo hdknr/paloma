@@ -107,6 +107,7 @@ class Operator(models.Model):
     def __unicode__(self):
         return "%s@%s" % ( self.user.__unicode__(),self.owner.domain)
 
+
 class Group(models.Model):
     ''' Group
     '''
@@ -195,7 +196,7 @@ class Enroll(models.Model):
     group= models.ForeignKey(Group,verbose_name=u'Group' 
                     ,null=True,default=None,blank=True,
                     on_delete=models.SET_NULL)
-    ''' Groupr'''
+    ''' Group'''
 
     inviter= models.ForeignKey(User,verbose_name=u'Invite' 
                     ,null=True,default=None,blank=True,
@@ -398,7 +399,6 @@ class Message(models.Model):
         return default_return_path( {"message_id" : self.id, 
                                     "domain": self.schedule.owner.domain } )
 
-
 class JournalManager(models.Manager):
     ''' Message Manager'''
     def handle_incomming_mail(self,sender,is_jailed,recipient,mssage ):
@@ -479,3 +479,48 @@ class EmailTask(models.Model):
     """ Expire Datetime """
 
     objects = EmailTaskManager()
+
+
+
+##########
+
+
+class Site(models.Model):
+    ''' Site
+    '''
+    name = models.CharField(u'Owner Name',max_length=100 ,db_index=True,unique=True)
+    ''' Site Name '''
+
+    domain= models.CharField(u'@Domain',max_length=100 ,db_index=True,unique=True)
+    ''' @Domain'''
+
+    operators = models.ManyToManyField(User,verbose_name=u'Site Operators' )
+    ''' Site Operators '''
+
+class Circle(models.Model):
+    ''' Circle 
+    '''
+    site = models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    ''' Owner Site'''
+
+    name = models.CharField(u'Circle Name',max_length=100 ,db_index=True )
+    ''' Circle Name '''
+
+    symbol= models.CharField(u'Symbol',max_length=100 ,db_index=True ,
+                    help_text=u'Used for Email address of group with site.domain',
+                    )
+    ''' Symbol '''
+
+    def __unicode__(self):
+        return "%s by %s" % ( self.name,  self.site.__unicode__() )
+
+    @property
+    def main_address(self):
+        return  "%s@%s" % ( self.symbol, self.site.domain)
+
+    class Meta:
+        unique_together = ( ('site','name') ,
+                            ('site','symbol'),
+                        )
+
+
