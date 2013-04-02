@@ -13,6 +13,7 @@ from django.template import Template,Context
 
 from datetime import datetime,timedelta
 import sys,traceback
+import re
 
 from paloma.utils import create_auto_secret,create_auto_short_secret
 from paloma.models import Enroll,EmailTask,Mailbox
@@ -176,11 +177,16 @@ class EnrollAction(Action):
 
 
 
+def register_action(action):
+    _actions.append(action)
 
 #########
 
 def action(pattern,*dargs,**dkwargs):
-    ''' Action Decorator '''
+    ''' Action Decorator 
+
+        - all "action" function has "action" signature in "func_dict"
+     '''
     def receive_func(func):
         import functools
         @functools.wraps(func)
@@ -188,21 +194,27 @@ def action(pattern,*dargs,**dkwargs):
             try:
                 kwargs.update( re.search(pattern,recipient).groupdict() )
             except Exception,e:
+                print "action ex ",e
                 pass
             result=func(sender,recipient,journal,*args, **kwargs)
             return result
+        wrapper.func_dict['action']=True        #: "action" function signature
         return wrapper
     return receive_func
 
 _actions=[]
 
+from django.conf import settings
 def process_action(sender,recipient ,journal):
-    '''
-    '''
-    for action in _actions: 
-        ret = action(sender,recipient,journal )
-        if ret: 
-            break;        
+    ''' Execute all "action" until one of them return True
 
-def register_action(action):
-    _actions.append(action)
+        - moduls specifind PALOMA_ACTIONS in settings.py
+    '''
+    for actions in getattr(settings,'PALOMA_ACTIONS',[]):
+        try:
+            ret =any(  getattr(v,'func_dict',{}).get('action',False) == True and v(sender,recipient,journal)
+                        for k,v in __import__(actions,{},{},['*'] ).__dict__.items() )
+        except Exception,e:
+            pass
+
+
