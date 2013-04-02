@@ -126,13 +126,46 @@ class MessageAdmin(admin.ModelAdmin):
     list_display=('schedule','mailbox','mail_message_id',)
 admin.site.register(Message,MessageAdmin)
 
-### Journal 
-class JournalAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Journal._meta.fields ])
-admin.site.register(Journal,JournalAdmin)
-
 ### EmailTask 
 class EmailTaskAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in EmailTask._meta.fields ])
 admin.site.register(EmailTask,EmailTaskAdmin)
+
+#################################################
+
+### Site 
+class SiteAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Site._meta.fields ])
+admin.site.register(Site,SiteAdmin)
+
+### Text 
+class TextAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Text._meta.fields ])
+admin.site.register(Text,TextAdmin)
+
+### Circle 
+class CircleAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Circle._meta.fields ])
+admin.site.register(Circle,CircleAdmin)
+
+### Member 
+class MemberAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Member._meta.fields ])
+admin.site.register(Member,MemberAdmin)
+
+### Publish 
+class PublishAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Publish._meta.fields ])
+admin.site.register(Publish,PublishAdmin)
+
+### Mail 
+class MailAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Mail._meta.fields ])
+admin.site.register(Mail,MailAdmin)
+
+
+### Journal 
+class JournalAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Journal._meta.fields ])
+admin.site.register(Journal,JournalAdmin)
 

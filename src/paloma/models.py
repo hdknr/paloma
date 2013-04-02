@@ -72,11 +72,6 @@ class Alias(models.Model):
         pass
 
 # - 
-class AbstractProfile(models.Model):
-    ''' Profile meta class'''
-    class Meta:
-        abstract=True
-
 class Owner(models.Model):
     ''' Groups Owner
     '''
@@ -399,44 +394,6 @@ class Message(models.Model):
         return default_return_path( {"message_id" : self.id, 
                                     "domain": self.schedule.owner.domain } )
 
-class JournalManager(models.Manager):
-    ''' Message Manager'''
-    def handle_incomming_mail(self,sender,is_jailed,recipient,mssage ):
-        ''' 
-            :param mesage: :py:class:`email.Message`
-        '''
-
-class Journal(models.Model):
-    ''' Raw Message
-
-    '''
-    dt_created=  models.DateTimeField(u'Journaled Datetime'  ,help_text=u'Journaled datetime', auto_now_add=True )
-    ''' Journaled Datetime '''
-
-    sender= models.CharField(u'Sender',max_length=100)
-    ''' sender '''
-    
-    recipient= models.CharField(u'Receipient',max_length=100)
-    ''' recipient '''
-
-    text = models.TextField(u'Message Text',default=None,blank=True,null=True)
-    ''' Message text '''
-
-    is_jailed = models.BooleanField(u'Jailed Message',default=False )
-    ''' Jailed(Reciepient missing emails have been journaled) if true '''
-
-    def mailobject(self):
-        ''' return mail object
-
-            :rtype: email.message.Message
-        '''
-        return message_from_string(self.text)
-
-    class Meta:
-        verbose_name=u'Journal'
-        verbose_name_plural=u'Journals'
-
-
 class EmailTaskManager(models.Manager):
     ''' EmailTaskManager'''
 #    def enqueue(self,recipient,sender,journal_id):
@@ -482,7 +439,12 @@ class EmailTask(models.Model):
 
 
 
-##########
+################################################################################
+
+class AbstractProfile(models.Model):
+    ''' Profile meta class'''
+    class Meta:
+        abstract=True
 
 
 class Site(models.Model):
@@ -496,6 +458,52 @@ class Site(models.Model):
 
     operators = models.ManyToManyField(User,verbose_name=u'Site Operators' )
     ''' Site Operators '''
+
+
+    @property
+    def default_circle(self):
+
+        try:
+            return self.circle_set.get(is_default=True,)   
+        except:
+            #: if no, get "all"
+            return self.circle_set.get_or_create(
+                            site= self,
+                            name= "all",
+                            symbol="all",
+                    )
+
+    def __unicode__(self):
+        return self.domain
+
+class Text(models.Model):
+    ''' Site Notice Text '''
+
+    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    ''' Owner Site'''
+
+    name = models.CharField(u'Notice Name',max_length=20,)
+    ''' Notice Name'''
+
+    subject= models.CharField(u'Subject',max_length=100 ,)
+    ''' Subject '''
+
+    text =  models.TextField(u'Text',max_length=100 ,)
+    ''' Text '''
+
+    def render(self,*args,**kwargs):
+        ''' 
+            :param kwargs: Context dictionary (Group,Enroll,...)
+        '''        
+        return tuple([Template(t).render(Context(kwargs)) 
+                for t in [self.subject,self.text] ])
+
+    def __unicode__(self):
+        return self.name
+
+    class Meta:
+        unique_together = ( ('site','name') ,
+                        )
 
 class Circle(models.Model):
     ''' Circle 
@@ -511,16 +519,186 @@ class Circle(models.Model):
                     )
     ''' Symbol '''
 
+    is_default = models.BooleanField(default=False,)
+    ''' Site's Default Circle or not '''
+
+    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
+    ''' Group Operators
+    '''
+
     def __unicode__(self):
-        return "%s by %s" % ( self.name,  self.site.__unicode__() )
+        return "%s of %s" % ( self.name,  self.site.__unicode__() )
 
     @property
     def main_address(self):
         return  "%s@%s" % ( self.symbol, self.site.domain)
 
+    def save(self, **kwargs ):
+        if self.is_default:
+            self.site.circle_set.update(is_default=False)
+        else:
+            query = () if self.id == None else (~Q(id=self.id),)
+            if self.site.circle_set.filter(is_default=True,*query).count() <1: 
+                self.is_default = True 
+
+        super(Circle,self).save(**kwargs)
+
     class Meta:
         unique_together = ( ('site','name') ,
                             ('site','symbol'),
                         )
+
+
+class Member(models.Model):
+    ''' Member
+
+        - a system user can have multiple personality
+    '''
+    user= models.ForeignKey(User, verbose_name=u'System User' )
+    ''' System User '''
+
+    address = models.CharField(u'Forward address',max_length=100 ,unique=True)
+    ''' Email Address 
+    '''
+
+    is_active = models.BooleanField(u'Actaive status',default=False )
+    ''' Active Status '''
+
+    bounces = models.IntegerField(u'Bounce counts',default=0)
+    ''' Bounce count'''
+
+    circles= models.ManyToManyField(Circle,verbose_name=u'Opt-in Group' )
+    ''' Opt-In Circles'''
+
+    def __unicode__(self):
+       return "%s(%s)"% (
+            self.user.__unicode__() if self.user else "unbound user",
+            self.address if self.address else "not registered",
+        )
+
+PUBLISH_STATUS=(
+                    ('pending','pending'),
+                    ('scheduled','scheduled'),
+                    ('active','active'),
+                    ('finished','finished'),
+                    ('canceled','canceled'),
+                )
+
+class Publish(models.Model):
+    ''' Message Delivery Publish'''
+
+    publisher = models.ForeignKey(User, verbose_name=u'Publisher' )
+    ''' publisher '''
+
+    subject= models.CharField(u'Subject',max_length=101 ,)
+    ''' Subject '''
+
+    text =  models.TextField(u'Text',max_length=100 ,)
+    ''' Text '''
+
+    groups = models.ManyToManyField(Group ,verbose_name=u'Traget Groups ' )
+    ''' Group '''
+
+    task= models.CharField(u'Task ID',max_length=100 ,default=None,null=True,blank=True,)
+    ''' Task ID  '''
+
+    status= models.CharField(_(u"status"), max_length=24,db_index=True,
+                                default="pending", choices=PUBLISH_STATUS) 
+
+    dt_start =  models.DateTimeField(u'Start to send '  ,help_text=u'created datetime',default=now )
+    ''' Stat datetime to send'''
+
+    forward_to= models.CharField(u'Forward address',max_length=100 ,default=None,null=True,blank=True)
+    ''' Forward address for incomming email '''
+
+    def __unicode__(self):
+        return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.owner.__unicode__())
+
+    def get_context(self,group,user):
+        context = {}
+        for ref in self._meta.get_all_related_objects():
+            if ref.model in AbstractProfile.__subclasses__():
+                try:
+                    context.update( getattr(self,ref.var_name ).target_context(group,user) )
+                except Exception,e:
+                    pass 
+        return context
+    
+
+class Mail(models.Model):
+    ''' Actual Mail Delivery 
+
+        - Message and status management
+    '''
+    publish = models.ForeignKey(Publish,verbose_name=u'Mail Schedule' )
+    ''' Mail Schedule'''
+
+    member = models.ForeignKey(Member,verbose_name=u'Target Member' )
+    ''' Target Mailbox'''
+
+    mail_message_id = models.CharField(u'Message ID',max_length=100,db_index=True,unique=True)
+    ''' Mesage-ID header 
+
+        - 'Message-ID: <local-part "@" domain>'
+    '''
+
+    text = models.TextField(u'Message Text',default=None,blank=True,null=True)
+    ''' Message text '''
+    #: TODO: delivery statusm management
+
+    def save(self,force_insert=False,force_update=False,*args,**kwargs):         
+        ''' override save() '''
+
+        digest = hashlib.md5('%d%d%s' %( 
+                self.publish.id,self.member.id,self.member.address )).hexdigest()
+        self.mail_message_id = "<p-%d-%d-%s@%s>" % ( 
+                            self.publish.id,self.member.id, 
+                                digest[:10],
+                                self.publish.owner.domain )
+
+        super(Mail,self).save(force_insert,force_update,*args,**kwargs)
+
+    def get_return_path(self):
+        ''' default return path '''
+        return default_return_path( {"message_id" : self.id, 
+                                    "domain": self.publish.site.domain } )
+
+####
+class JournalManager(models.Manager):
+    ''' Message Manager'''
+    def handle_incomming_mail(self,sender,is_jailed,recipient,mssage ):
+        ''' 
+            :param mesage: :py:class:`email.Message`
+        '''
+
+class Journal(models.Model):
+    ''' Raw Message
+
+    '''
+    dt_created=  models.DateTimeField(u'Journaled Datetime'  ,help_text=u'Journaled datetime', auto_now_add=True )
+    ''' Journaled Datetime '''
+
+    sender= models.CharField(u'Sender',max_length=100)
+    ''' sender '''
+    
+    recipient= models.CharField(u'Receipient',max_length=100)
+    ''' recipient '''
+
+    text = models.TextField(u'Message Text',default=None,blank=True,null=True)
+    ''' Message text '''
+
+    is_jailed = models.BooleanField(u'Jailed Message',default=False )
+    ''' Jailed(Reciepient missing emails have been journaled) if true '''
+
+    def mailobject(self):
+        ''' return mail object
+
+            :rtype: email.message.Message
+        '''
+        return message_from_string(self.text)
+
+    class Meta:
+        verbose_name=u'Journal'
+        verbose_name_plural=u'Journals'
 
 
