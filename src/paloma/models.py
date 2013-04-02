@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
-
+from django.conf import settings
 from django.template import Template,Context
 
 from email import message_from_string
@@ -465,12 +465,13 @@ class Site(models.Model):
         try:
             return self.circle_set.get(is_default=True,)   
         except:
-            #: if no, get "all"
+            #: if no, get default: 
+            name = getattr(settings,'PALOMA_NAME','all')
             return self.circle_set.get_or_create(
                             site= self,
-                            name= "all",
-                            symbol="all",
-                    )
+                            name= name,
+                            symbol=name,
+                    )[0]
 
     def __unicode__(self):
         return self.domain
@@ -542,6 +543,10 @@ class Circle(models.Model):
 
         super(Circle,self).save(**kwargs)
 
+        if self.is_default and self.operators.count() <1 :
+            #:Default Circle MUST has operators
+            map(lambda o : self.operators.add(o),self.site.operators.all())
+        
     class Meta:
         unique_together = ( ('site','name') ,
                             ('site','symbol'),
@@ -699,5 +704,4 @@ class Journal(models.Model):
     class Meta:
         verbose_name=u'Journal'
         verbose_name_plural=u'Journals'
-
 
