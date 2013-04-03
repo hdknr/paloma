@@ -53,6 +53,11 @@ class JournalEmailBackend(BaseEmailBackend):
 
 class SmtpEmailBackend(DjangoEmailBackend):
     ''' handling SMTP 
+
+        - extended
+
+            - return_path 
+            - message_id  
     '''
     def _send(self, email_message):
         """A helper method that does the actual sending.

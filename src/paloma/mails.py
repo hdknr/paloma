@@ -25,6 +25,9 @@ def send_mail(subject, message, from_email, recipient_list,
     """Extended Django Sending Email Wrapper 
 
         :param kwargs: dict extended parameter
+
+        - return_path
+        - message_id
     """
     connection = connection or get_connection(username=auth_user,
                                     password=auth_password,
