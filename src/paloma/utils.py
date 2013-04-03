@@ -2,10 +2,15 @@
 
 from django.db.models.base import ModelBase
 from django.contrib.contenttypes.models import ContentType
+from django.utils.timezone import now
+from django.conf import settings
 
 import random ,os
 import string
-from datetime import datetime 
+from datetime import datetime ,timedelta
+
+expire = lambda : now() + timedelta(seconds = getattr(settings,'PALOMA_EXPIRE',120) ) 
+
 
 def gen_random_string(length, chrs=None):
     ''' generate random string
