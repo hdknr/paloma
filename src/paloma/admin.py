@@ -163,6 +163,11 @@ class MailAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Mail._meta.fields ])
 admin.site.register(Mail,MailAdmin)
 
+### Provision
+class ProvisionAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Provision._meta.fields ])
+admin.site.register(Provision,ProvisionAdmin)
+
 
 ### Journal 
 class JournalAdmin(admin.ModelAdmin):
