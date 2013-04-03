@@ -463,6 +463,10 @@ class Site(models.Model):
     ''' Site Operators '''
 
     @property
+    def authority_address(self):
+        return "%s@%s" % ( self.name, self.domain )
+
+    @property
     def default_circle(self):
 
         try:
@@ -496,10 +500,19 @@ class Text(models.Model):
 
     def render(self,*args,**kwargs):
         ''' 
-            :param kwargs: Context dictionary (Group,Enroll,...)
+            :param kwargs: Context dictionary 
         '''        
         return tuple([Template(t).render(Context(kwargs)) 
                 for t in [self.subject,self.text] ])
+
+    def sendmail(self,return_path,tos,*args,**kwargs):
+        ''' sendmail '''
+        from mails import send_mail
+        subject,body = self.render(*args,**kwargs)
+        send_mail(subject,body,
+            self.site.authority_address,
+            tos,
+            return_path=return_path )
 
     def __unicode__(self):
         return self.name

@@ -175,12 +175,10 @@ class EnrollAction(Action):
         return ret
 
 
+##########################################################################################
 
-
-def register_action(action):
-    _actions.append(action)
-
-#########
+import logging
+log = logging.getLogger(__name__)
 
 def action(pattern,*dargs,**dkwargs):
     ''' Action Decorator 
@@ -194,8 +192,8 @@ def action(pattern,*dargs,**dkwargs):
             try:
                 kwargs.update( re.search(pattern,recipient).groupdict() )
             except Exception,e:
-                print "action ex ",e
-                pass
+                log.debug('action execute:' + str(e))
+            #:call action function
             result=func(sender,recipient,journal,*args, **kwargs)
             return result
         wrapper.func_dict['action']=True        #: "action" function signature
@@ -215,6 +213,4 @@ def process_action(sender,recipient ,journal):
             ret =any(  getattr(v,'func_dict',{}).get('action',False) == True and v(sender,recipient,journal)
                         for k,v in __import__(actions,{},{},['*'] ).__dict__.items() )
         except Exception,e:
-            pass
-
-
+            log.debug('process_action:'+str(e) )
