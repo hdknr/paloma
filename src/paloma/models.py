@@ -18,7 +18,7 @@ import re
 import uuid
 import hashlib
 
-from paloma.utils import create_auto_secret,create_auto_short_secret
+from paloma.utils import create_auto_secret,create_auto_short_secret,expire
 
 class Domain(models.Model):
     ''' Domain
@@ -456,6 +456,9 @@ class Site(models.Model):
     domain= models.CharField(u'@Domain',max_length=100 ,db_index=True,unique=True)
     ''' @Domain'''
 
+    url =  models.CharField(u'URL',max_length=150 ,db_index=True,unique=True,)
+    ''' URL path ''' 
+
     operators = models.ManyToManyField(User,verbose_name=u'Site Operators' )
     ''' Site Operators '''
 
@@ -482,7 +485,7 @@ class Text(models.Model):
     site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
     ''' Owner Site'''
 
-    name = models.CharField(u'Notice Name',max_length=20,)
+    name = models.CharField(u'Notice Name',max_length=20,db_index=True,)
     ''' Notice Name'''
 
     subject= models.CharField(u'Subject',max_length=100 ,)
@@ -705,9 +708,8 @@ class Provision(models.Model):
     url = models.CharField(u'URL for notice',max_length=200,default=None,null=True,blank=True)
     ''' URL for notice '''
 
-
     dt_expire =   models.DateTimeField(u'Secrete Expired'  ,
-                                null=True, blank=True, default=None,
+                                null=True, blank=True, default=expire,
                                 help_text=u'Secrete Expired', )
     ''' Secrete Expired'''
 
