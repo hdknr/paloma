@@ -769,6 +769,14 @@ class Provision(models.Model):
         self.dt_commit = now()
         self.save()
 
+    def reset(self,save=False):
+        self.secret= create_auto_secret()
+        self.short_secret= create_auto_short_secret()
+        self.dt_commit = None
+        self.dt_expire = expire()
+        if save:
+            self.save()
+
 ####
 class JournalManager(models.Manager):
     ''' Message Manager'''
