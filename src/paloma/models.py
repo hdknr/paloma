@@ -596,6 +596,14 @@ class Member(models.Model):
             self.address if self.address else "not registered",
         )
 
+    def reset_password(self,active=False):
+        ''' reset password '''
+        newpass = User.objects.make_random_password()
+        self.user.set_password( newpass )
+        self.user.is_active = active
+        self.user.save()
+        return newpass
+
 PUBLISH_STATUS=(
                     ('pending','pending'),
                     ('scheduled','scheduled'),
@@ -749,6 +757,15 @@ class Provision(models.Model):
     def close(self):
         ''' close this enroll management
         '''
+        self.dt_commit = now()
+        self.save()
+
+    def provided(self,user,address,is_active=True):
+        self.member = Member.objects.get_or_create(user=user,address=address)[0]
+        self.member.is_active = is_active
+        self.member.save()
+        if self.circle:
+            self.member.circles.add( self.circle )
         self.dt_commit = now()
         self.save()
 
