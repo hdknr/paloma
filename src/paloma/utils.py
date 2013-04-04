@@ -10,7 +10,7 @@ import string
 from datetime import datetime ,timedelta
 
 expire = lambda : now() + timedelta(seconds = getattr(settings,'PALOMA_EXPIRE',120) ) 
-
+class_path = lambda obj: ".".join([obj.__class__.__module__,obj.__class__.__name__ ])
 
 def gen_random_string(length, chrs=None):
     ''' generate random string

@@ -10,6 +10,7 @@ from django.core.mail.message import sanitize_address
 from email.utils import parseaddr
 
 from tasks import send_email,journalize ,smtp_status
+from utils import class_path
 
 class PalomaEmailBackend(BaseEmailBackend):
     ''' A Django Email Backend to send emails thru Celery Task queue.
@@ -90,9 +91,9 @@ class SmtpEmailBackend(DjangoEmailBackend):
             #: connection: smtplib.SMTP
             self.connection.sendmail(
                     from_email, recipients,mailobj.as_string() )
-            smtp_status.delay('Backend', extended.get('message_id','N/A'),None)
+            smtp_status.delay( class_path(self),'OK', **extended )
         except Exception,e:
-            smtp_status.delay('Backend', extended.get('message_id','N/A'),str(type(e)))
+            smtp_status.delay( class_path(self),class_path(e), **extended )
             if not self.fail_silently:
                 raise
             return False

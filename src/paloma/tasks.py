@@ -7,6 +7,7 @@ from celery import current_task,app
 from celery.task import task
 
 import logging
+import traceback
 
 from models import (
         Publish,Circle,Member,Mail,
@@ -14,6 +15,7 @@ from models import (
 )
 from mails import send_mail
 from actions import process_action
+from utils import class_path
 
 CONFIG = getattr(settings, 'PALOMA_EMAIL_TASK_CONFIG', {})
 
@@ -31,8 +33,8 @@ def send_email(message, **kwargs):
         - change "sennder address" for VERP 
         - kwargs should have "return_path" .
     '''
+    logger = current_task.get_logger()
     try:
-        logger = send_email.get_logger()
         conn = get_connection(backend=BACKEND)
         result = conn.send_messages([message])
         logger.debug("send_email:Successfully sent email message to %r.", message.to)
@@ -40,10 +42,10 @@ def send_email(message, **kwargs):
     except Exception, e:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
+        logger.debug( traceback.format_exc() ) 
         logger.warning("send_email:Failed to send email message to %r, retrying.",
                     message.to)
         send_email.retry(exc=e)
-
 
 def process_error_mail(recipient,sender,journal_id):
     """ Error Mail Checker and Handler
@@ -200,7 +202,6 @@ def enqueue_mails_for_publish(sender,publish_id,async=True):
     except Exception,e:
         log.error( "enqueue_mails_for_publish():" +  str(e) )
 
-import traceback
 @task
 def enqueue_mail(sender,publish_id,circle_id, member_id,async=True ): 
     ''' Generate (or update) message for specifed circle and member
@@ -247,6 +248,7 @@ def deliver_mail(mail_id=None,mail_obj=None):
                   [msg.member.address],
                   return_path = msg.get_return_path(),  #: RETRUN-PATH
                   message_id = msg.mail_message_id,     #: MESSSAGE-ID
+                  model_class= str(msg._meta),          #: for replay model class in logging
             )
         #:TODO: change the status
                   
@@ -278,6 +280,9 @@ def apply_publish(publish):
         do_cancel_publish(publish)
 
 @task
-def smtp_status(sender,message_id,exception):
+def smtp_status(sender,exception,**extended):
+    from django.db.models.loading import get_model
     log = current_task.get_logger()
-    log.debug('smtp_status:%s:%s' % ( message_id,exception ) ) 
+    log.debug('smtp_status:%s:%s:%s' % ( sender, exception,str(extended) ) ) 
+    model_class = get_model( *(extended.get('model_class','')+'.').split('.')[:2])
+    model_class and getattr(model_class,'update_status',lambda *x,**y:None)(model_class,exception,**extended)

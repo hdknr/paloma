@@ -317,6 +317,16 @@ class Mail(models.Model):
     ''' Message text '''
     #: TODO: delivery statusm management
 
+    staus=models.CharField(u'Status',max_length=50,default=None,blank=True,null=True)
+    ''' SMTP Status '''
+
+    created = models.DateTimeField(u'Created',auto_now_add=True)
+    updated = models.DateTimeField(u'Updated',auto_now=True)
+    smtpded  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
+
+    def __unicode__(self):
+        return self.publish.__unicode__() + " " + self.member.__unicode__() 
+
     def save(self,force_insert=False,force_update=False,*args,**kwargs):         
         ''' override save() '''
 
@@ -328,6 +338,12 @@ class Mail(models.Model):
                                 self.publish.site.domain )  #:
 
         super(Mail,self).save(force_insert,force_update,*args,**kwargs)
+
+    @classmethod
+    def update_status(cls,msg,dt=None,**kwargs):
+#*        self.smtped = dt or now()
+#*        self.status = "SMTP:"+status
+        pass
 
     def get_return_path(self):
         ''' default return path '''
