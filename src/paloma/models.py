@@ -288,9 +288,6 @@ class Notice(models.Model):
         return tuple([Template(t).render(Context(kwargs)) 
                 for t in [self.subject,self.text] ])
 
-class ScheduleManager(models.Manager):
-    ''' Schedule Manager '''
-    pass                
 
 SCHEDULE_STATUS=(
                     ('pending','pending'),
@@ -326,10 +323,6 @@ class Schedule(models.Model):
 
     forward_to= models.CharField(u'Forward address',max_length=100 ,default=None,null=True,blank=True)
     ''' Forward address for incomming email '''
-
-    objects = ScheduleManager()
-    #: TODO : other management
-    #: TODO:  Filtering 
 
     def __unicode__(self):
         return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.owner.__unicode__())
@@ -615,6 +608,9 @@ PUBLISH_STATUS=(
 class Publish(models.Model):
     ''' Message Delivery Publish'''
 
+    site = models.ForeignKey(Site,verbose_name=u'Site', )
+    ''' Site '''
+
     publisher = models.ForeignKey(User, verbose_name=u'Publisher' )
     ''' publisher '''
 
@@ -624,8 +620,8 @@ class Publish(models.Model):
     text =  models.TextField(u'Text',max_length=100 ,)
     ''' Text '''
 
-    groups = models.ManyToManyField(Group ,verbose_name=u'Traget Groups ' )
-    ''' Group '''
+    circles= models.ManyToManyField(Circle,verbose_name=u'Traget Circles' )
+    ''' Circle'''
 
     task= models.CharField(u'Task ID',max_length=100 ,default=None,null=True,blank=True,)
     ''' Task ID  '''
@@ -640,18 +636,19 @@ class Publish(models.Model):
     ''' Forward address for incomming email '''
 
     def __unicode__(self):
-        return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.owner.__unicode__())
+        return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.publisher.__unicode__())
 
-    def get_context(self,group,user):
+    def get_context(self,circle,user):
         context = {}
         for ref in self._meta.get_all_related_objects():
             if ref.model in AbstractProfile.__subclasses__():
                 try:
-                    context.update( getattr(self,ref.var_name ).target_context(group,user) )
+                    context.update( 
+                        getattr(self,ref.var_name ).target_context(circle,user) 
+                    )
                 except Exception,e:
                     pass 
         return context
-    
 
 class Mail(models.Model):
     ''' Actual Mail Delivery 
@@ -682,7 +679,7 @@ class Mail(models.Model):
         self.mail_message_id = "<p-%d-%d-%s@%s>" % ( 
                             self.publish.id,self.member.id, 
                                 digest[:10],
-                                self.publish.owner.domain )
+                                self.publish.site.domain )  #:
 
         super(Mail,self).save(force_insert,force_update,*args,**kwargs)
 
