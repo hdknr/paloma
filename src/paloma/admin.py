@@ -87,7 +87,7 @@ class PublishAdmin(admin.ModelAdmin):
         ''' Saving... 
 
             :param request: request object to view
-            :param obj: Schedule instance
+            :param obj: Publish instance
             :param form: Form instance
             :param change: bool
         ''' 
@@ -116,3 +116,10 @@ admin.site.register(Provision,ProvisionAdmin)
 class JournalAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Journal._meta.fields ])
 admin.site.register(Journal,JournalAdmin)
+
+#################
+# rsyslog
+try:
+    from rsyslog import SystemeventsAdmin,SystemeventspropertiesAdmin
+except:
+    pass
