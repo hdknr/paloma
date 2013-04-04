@@ -3,12 +3,13 @@ from django.core.mail import get_connection
 from django.utils.timezone import now
 from django.template import Template,Context
 
-from celery import current_task
+from celery import current_task,app
 from celery.task import task
 
 import logging
 
 from paloma.models import (
+        Publish,Circle,Member,Mail,
         Schedule,Group,Mailbox,Message,EmailTask,
         default_return_path ,return_path_from_address
 )
@@ -308,36 +309,6 @@ def generate_message(sender,schedule_id,group_id, mailbox_id ):
         log.error("generate_message()" + str(e))
 
 @task
-def send_message(message_id=None,message_obj=None):
-    ''' send actual message
-        
-    .. todo::
-        - Message status is required
-    '''
-    log = current_task.get_logger()
-    try:
-        msg = message_obj if message_obj != None else Messsage.objects.get(id=message_id) 
-        #:TODO: check message status. If already "SENDING" or "CANCELD", don't send
-        #       check schedue status. If already "CANCELD", don't send
-        send_mail(msg.schedule.subject,     #:TODO: Message should have rendered subject
-                  msg.text,
-                  "info@"+msg.schedule.owner.domain, #:TODO: Owner "symbol" to be defined and compose from address
-                  [msg.mailbox.address],
-                  return_path = msg.get_return_path(),
-                  message_id = msg.mail_message_id,
-            )
-        #:TODO: change the status
-                  
-    except Message.DoesNotExist ,e:
-        log.error("send_message():No Message record for id=%s" % message_id)
-    except Exception,e:
-        #: STMP error... ?
-        log.error("send_message(): %s" % str(e))
-        #:TODO: 
-        #   - error message to Message
-        #   - change status of Message
-        
-@task
 def disable_mailbox(bounce_count=None,*args,**kwargs):
     '''  
 
@@ -350,3 +321,152 @@ def disable_mailbox(bounce_count=None,*args,**kwargs):
         ret = Mailbox.objects.filter(bounces__gte=bounce_count).update(is_active=False)
         log.debug( "diabble_mailbox: %d mailboxes have been diabled." % ret )
             
+@task
+def send_message(message_id=None,message_obj=None):
+    ''' send actual message
+        
+    .. todo::
+        - Message status is required
+    '''
+    log = current_task.get_logger()
+    try:
+        msg = message_obj if message_obj != None else Messsage.objects.get(id=message_id) 
+        #:TODO: check message status. If already "SENDING" or "CANCELD", don't send
+        #       check schedue status. If already "CANCELD", don't send
+        send_mail(msg.publish.subject,     #:TODO: Message should have rendered subject
+                  msg.text,
+                  msg.publish.site.authority_address, #:TODO: Owner "symbol" to be defined and compose from address
+                  [msg.mailbox.address],
+                  return_path = msg.get_return_path(),  #: RETRUN-PATH
+                  message_id = msg.mail_message_id,     #: MESSSAGE-ID
+            )
+        #:TODO: change the status
+                  
+    except Message.DoesNotExist ,e:
+        log.error("send_message():No Message record for id=%s" % message_id)
+    except Exception,e:
+        #: STMP error... ?
+        log.error("send_message(): %s" % str(e))
+        #:TODO: 
+        #   - error message to Message
+        #   - change status of Message
+        
+##########################################################################################################
+        
+@task
+def enqueue_publish(sender,publish_id=None,publish=None):
+    ''' enqueue specifid mail publish, or all publish
+
+        - id : Publish identfier
+    '''
+    log = current_task.get_logger()
+
+    q = [publish]
+    if publish == None:
+        args = {'status': "scheduled",}
+        if publish_id:
+            args['id'] = publish_id
+        log.debug("specified Publish is = %s" % str(args))
+        q =  Publish.objects.filter(**args)
+    
+    for publish in q: 
+        enqueue_mails_for_publish.delay(sender,publish.id ) #: Asynchronized Call
+        publish.status = "active"
+        publish.save()
+
+@task
+def enqueue_mails_for_publish(sender,publish_id,async=True):
+    ''' Enqueu mails for speicifed Publish
+
+    .. todo::
+        - Custum QuerSet fiilter to targetting user.
+        - If called asynchronosly, enqueue_mail should be called synchronosly.
+    '''
+    log = current_task.get_logger()
+    try:   
+        publish = Publish.objects.get(id = publish_id ) 
+        for circle in publish.circles.all():
+            for member in circle.member_set.exclude(user=None):
+                #: TODO: Exclude  user == None or is_active ==False or forward == None
+                if async:
+                    enqueue_mail.delay(sender,publish.id,circle.id,member.id )
+                else:
+                    enqueue_mail(sender,publish.id,circle.id,member.id,async )
+    except Exception,e:
+        log.error( "enqueue_mails_for_publish():" +  str(e) )
+
+import traceback
+@task
+def enqueue_mail(sender,publish_id,circle_id, member_id,async=True ): 
+    ''' Generate (or update) message for specifed circle and member
+    '''
+    log = current_task.get_logger()
+    current_time = now()
+    try:
+        publish = Publish.objects.get(id=publish_id )
+        circle = Circle.objects.get(id=circle_id)
+        member= Member.objects.get(id=member_id)
+
+        context = publish.get_context(circle,member.user)        
+        msg,craeted= Mail.objects.get_or_create(publish=publish,member=member )
+        msg.text = Template(publish.text).render(Context(context))
+        msg.save()
+
+        if async==False or current_time >= publish.dt_start: #:TODO : 1 minutes 
+            #: sendmail right now
+            deliver_mail(mail_obj=msg) 
+        else :
+            #: sendmail later
+            deliver_mail.apply_async([msg.id],eta=msg.dt_start )
+
+    except Exception,e:
+        print traceback.format_exc()
+        log.error("generate_message()" + str(e))
+
+@task
+def deliver_mail(mail_id=None,mail_obj=None):
+    ''' send actual mail
+        
+    .. todo::
+        - Message status is required
+    '''
+    log = current_task.get_logger()
+    try:
+        msg = mail_obj if mail_obj != None else Mail.objects.get(id=mail_id) 
+        #:TODO: check mail status. If already "SENDING" or "CANCELD", don't send
+        #       check schedue status. If already "CANCELD", don't send
+        send_mail(msg.publish.subject,     #:TODO: Message should have rendered subject
+                  msg.text,
+                  msg.publish.site.authority_address, #:TODO: Owner "symbol" to be defined and compose from address
+                  [msg.member.address],
+                  return_path = msg.get_return_path(),  #: RETRUN-PATH
+                  mail_id = msg.mail_message_id,     #: MESSSAGE-ID
+            )
+        #:TODO: change the status
+                  
+    except Mail.DoesNotExist ,e:
+        log.error("send_mail():No Message record for id=%s" % mail_id)
+    except Exception,e:
+        #: STMP error... ?
+        log.error("send_mail(): %s" % str(e))
+        #:TODO: 
+        #   - error mail to Message
+        #   - change status of Message
+
+def do_enqueue_publish(publish):
+    ''' helper te enqueue_publish '''
+    t = enqueue_schedule.apply_async(("admin",publish.id),{},eta=publish.dt_start)
+    publish.task =t.id
+    publish.save()
+
+def do_cancel_publish(publish):
+    ''' helper  cancel task'''
+    if publish.task != None:
+        app.current_app().control.revoke(publish.task)
+
+def apply_publish(publish):
+    ''' do something depend on status '''
+    if  publish.status == 'scheduled':
+        do_enqueue_publish(publish)
+    elif publish.status == "canceled":
+        do_cancel_publish(publish)

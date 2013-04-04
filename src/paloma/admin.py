@@ -6,8 +6,7 @@ from django.utils.timezone import now
 from celery import app
 
 from models import *
-from tasks import enqueue_schedule
-
+from tasks import apply_publish
 
 if settings.DEBUG:
     try:
@@ -58,79 +57,6 @@ class AliasAdmin(admin.ModelAdmin):
 admin.site.register(Alias,AliasAdmin)
 
 
-### Owner 
-class OwnerAdmin(admin.ModelAdmin):
-    list_display=('name','user','domain','forward_to',)
-admin.site.register(Owner,OwnerAdmin)
-
-### Operator 
-class OperatorAdmin(admin.ModelAdmin):
-    list_display=('owner','user', )
-admin.site.register(Operator,OperatorAdmin)
-
-### Group 
-class GroupAdmin(admin.ModelAdmin):
-    list_display=('name','owner','symbol','main_address')
-    list_filter=('owner',)
-admin.site.register(Group,GroupAdmin)
-
-### Mailbox 
-class MailboxAdmin(admin.ModelAdmin):
-    list_display=('id', 'user', 'address', 'is_active', 'bounces',)
-admin.site.register(Mailbox,MailboxAdmin)
-
-### Enroll 
-class EnrollAdmin(admin.ModelAdmin):
-    list_display=('id','enroll_type', 'mailbox','group', 'inviter', 'prospect',
-                    'url','secret','short_secret',
-                    'dt_expire','dt_try', 'dt_commit' )
-    list_filter=('enroll_type',)
-    
-admin.site.register(Enroll,EnrollAdmin)
-
-### Notice 
-class NoticeAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Notice._meta.fields ])
-admin.site.register(Notice,NoticeAdmin)
-
-### Schedule 
-class ScheduleAdmin(admin.ModelAdmin):
-    list_display=['status','id', 'owner', 'subject', 'text', 'dt_start', 'forward_to','task']
-
-    def save_model(self, request, obj, form, change):
-        ''' Saving... 
-
-            :param request: request object to view
-            :param obj: Schedule instance
-            :param form: Form instance
-            :param change: bool
-        ''' 
-        if 'status' in form.changed_data :
-            if obj.status == 'scheduled':
-                if  obj.dt_start < now() or  ( obj.task != None and obj.task !="")  :
-                    #: Don not save()
-                    return
-                #: create_task
-                t = enqueue_schedule.apply_async(("admin",obj.id),{},eta=obj.dt_start)
-                obj.task =t.id                  
-
-            elif obj.status == "canceled":
-                if obj.task != None:
-                    app.current_app().control.revoke(obj.task)
-
-        super(ScheduleAdmin,self).save_model(request,obj,form,change)
-
-admin.site.register(Schedule,ScheduleAdmin)
-### Message 
-class MessageAdmin(admin.ModelAdmin):
-    list_display=('schedule','mailbox','mail_message_id',)
-admin.site.register(Message,MessageAdmin)
-
-### EmailTask 
-class EmailTaskAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in EmailTask._meta.fields ])
-admin.site.register(EmailTask,EmailTaskAdmin)
-
 #################################################
 
 ### Site 
@@ -156,6 +82,24 @@ admin.site.register(Member,MemberAdmin)
 ### Publish 
 class PublishAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Publish._meta.fields ])
+
+    def save_model(self, request, obj, form, change):
+        ''' Saving... 
+
+            :param request: request object to view
+            :param obj: Schedule instance
+            :param form: Form instance
+            :param change: bool
+        ''' 
+        if all(['status' in form.changed_data,
+               obj.status == 'scheduled',
+               obj.dt_start < now() or  ( obj.task != None and obj.task !="") ]):
+            #: do nothing
+            return 
+
+        super(PublishAdmin,self).save_model(request,obj,form,change)
+        apply_publish(obj)
+
 admin.site.register(Publish,PublishAdmin)
 
 ### Mail 
@@ -168,9 +112,7 @@ class ProvisionAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Provision._meta.fields ])
 admin.site.register(Provision,ProvisionAdmin)
 
-
 ### Journal 
 class JournalAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Journal._meta.fields ])
 admin.site.register(Journal,JournalAdmin)
-
