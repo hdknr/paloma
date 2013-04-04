@@ -6,11 +6,10 @@ from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.backends.smtp import EmailBackend as DjangoEmailBackend
 from django.core.mail.message import sanitize_address
+
 from email.utils import parseaddr
 
-from paloma.tasks import send_email,bounce
-
-from django.conf import settings
+from tasks import send_email,journalize ,smtp_status
 
 class PalomaEmailBackend(BaseEmailBackend):
     ''' A Django Email Backend to send emails thru Celery Task queue.
@@ -46,15 +45,14 @@ class JournalEmailBackend(BaseEmailBackend):
         try:
             sender  = parseaddr( email_messages[0].from_email )[1]
             recipient =parseaddr( email_messages[0].to[0] )[1] 
-            bounce(sender,recipient,email_messages[0].message().as_string(),True )
+            journalize(sender,recipient,email_messages[0].message().as_string(),True )
             return 1
         except Exception,e:
             return 0
 
 class SmtpEmailBackend(DjangoEmailBackend):
-    ''' handling SMTP 
-
-        - extended
+    ''' handling SMTP  
+        (Basically django.core.mail.backends.smtp.EmailBackend)
 
             - return_path 
             - message_id  
@@ -92,7 +90,9 @@ class SmtpEmailBackend(DjangoEmailBackend):
             #: connection: smtplib.SMTP
             self.connection.sendmail(
                     from_email, recipients,mailobj.as_string() )
-        except:
+            smtp_status.delay('Backend', extended.get('message_id','N/A'),None)
+        except Exception,e:
+            smtp_status.delay('Backend', extended.get('message_id','N/A'),str(type(e)))
             if not self.fail_silently:
                 raise
             return False
