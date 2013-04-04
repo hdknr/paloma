@@ -7,11 +7,27 @@ from django.core import mail
 
 
 class TaskTest(TestCase):
+    fixtures=['auth.json','simple.json',]
     def test_smtp_status(self):
         ''' python manage.py test paloma.TaskTest.test_smtp_status '''
         from tasks import smtp_status 
+        from django.contrib.auth.models import User      
+        from paloma.models import Mail
+
+        sender="test"
+        message="OK"
+        mail = Mail.objects.all()[0]
+        mail.set_status()           #:reset
+        self.assertIsNone(mail.status)
+        self.assertIsNone(mail.smtped)
         
-        smtp_status('test','OK',model_class='paloma.mail')
+        mid =mail.mail_message_id
+
+        smtp_status( sender,message,model_class='paloma.mail',message_id=mid,)
+
+        mail = Mail.objects.all()[0]
+        self.assertEqual(mail.status,message)
+        self.assertIsNotNone(mail.smtped )
 #
 #class SerTest(TestCase):
 #    ''' Serialization Test'''

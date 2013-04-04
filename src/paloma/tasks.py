@@ -280,9 +280,9 @@ def apply_publish(publish):
         do_cancel_publish(publish)
 
 @task
-def smtp_status(sender,exception,**extended):
+def smtp_status(sender,msg,**extended):
     from django.db.models.loading import get_model
     log = current_task.get_logger()
-    log.debug('smtp_status:%s:%s:%s' % ( sender, exception,str(extended) ) ) 
+    log.debug('smtp_status:%s:%s:%s' % ( sender, msg,str(extended) ) ) 
     model_class = get_model( *(extended.get('model_class','')+'.').split('.')[:2])
-    model_class and getattr(model_class,'update_status',lambda *x,**y:None)(model_class,exception,**extended)
+    model_class and getattr(model_class,'update_status',lambda *x,**y:None)(msg,**extended)

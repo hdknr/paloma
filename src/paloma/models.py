@@ -317,12 +317,12 @@ class Mail(models.Model):
     ''' Message text '''
     #: TODO: delivery statusm management
 
-    staus=models.CharField(u'Status',max_length=50,default=None,blank=True,null=True)
+    status=models.CharField(u'Status',max_length=50,default=None,blank=True,null=True)
     ''' SMTP Status '''
 
     created = models.DateTimeField(u'Created',auto_now_add=True)
     updated = models.DateTimeField(u'Updated',auto_now=True)
-    smtpded  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
+    smtped  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
 
     def __unicode__(self):
         return self.publish.__unicode__() + " " + self.member.__unicode__() 
@@ -339,11 +339,16 @@ class Mail(models.Model):
 
         super(Mail,self).save(force_insert,force_update,*args,**kwargs)
 
+    def set_status(self,status=None,smtped=None,do_save=True):
+        self.smtped = smtped
+        self.status = status
+        if do_save:
+            self.save()
+
     @classmethod
-    def update_status(cls,msg,dt=None,**kwargs):
-#*        self.smtped = dt or now()
-#*        self.status = "SMTP:"+status
-        pass
+    def update_status(cls,msg,**kwargs):
+        for m in cls.objects.filter(mail_message_id = kwargs.get('message_id','')):
+            m.set_status(msg,now())
 
     def get_return_path(self):
         ''' default return path '''
