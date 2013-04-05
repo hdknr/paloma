@@ -2,6 +2,10 @@ from django.conf import settings
 from django.core.mail import get_connection
 from django.utils.timezone import now
 from django.template import Template,Context
+from django.db.models.loading import get_model as django_get_model
+
+get_model = lambda p : django_get_model( *(p +'.').split('.')[:2] )
+#: TODO: care of number of dots is larger then 1.
 
 from celery import current_task,app
 from celery.task import task
@@ -124,7 +128,6 @@ def call_task_by_name(mod_name,task_name,*args,**kwargs):
     m = __import__(mod_name,globals(),locals(),["*"])
     getattr(m,task_name).delay( *args,**kwargs)
 
-    
 @task
 def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
     """ recourde bounce mail
@@ -205,49 +208,36 @@ def enqueue_mails_for_publish(sender,publish_id,async=True):
         publish = Publish.objects.get(id = publish_id ) 
         for circle in publish.circles.all():
             for member in circle.member_set.exclude(user=None):
+                msg,created= Mail.objects.get_or_create(
+                                publish=publish,circle=circle,member=member ) #:re-use the same mail
                 #: TODO: Exclude  user == None or is_active ==False or forward == None
                 if async:
-                    enqueue_mail.delay(sender,publish.id,circle.id,member.id )
+                    enqueue_mail.delay(mail_id=msg.id )
                 else:
-                    enqueue_mail(sender,publish.id,circle.id,member.id,async )
+                    enqueue_mail(mail_obj=msg)
     except Exception,e:
         log.error( "enqueue_mails_for_publish():" +  str(e) )
+        log.debug( traceback.format_exc().replace('\n','/') )
 
 @task
-def enqueue_mail(sender,publish_id,circle_id, member_id,async=True ): 
-    ''' Generate (or update) message for specifed circle and member
+def enqueue_mail(mail_id=None,mail_obj=None,async=True,):
+    mail_obj = mail_obj or Mail.objects.get(id = mail_id )
 
-    '''
     log = current_task.get_logger()
+    log.debug('tasks.enqueue_mail %s %s' % (mail_id,mail_obj))
+
     current_time = now()
-    try:
-        publish = Publish.objects.get(id=publish_id )
-        circle = Circle.objects.get(id=circle_id)
-        member= Member.objects.get(id=member_id)
 
-        context = publish.get_context(circle,member.user)        
-        msg,created= Mail.objects.get_or_create(publish=publish,member=member ) #:re-use the same mail
-
-        if created ==False and msg.smtped !=None:
-            log.warning("tasks.enqueue_mail: publish(%s) to member(%s) is already sent." % (publish,member))
-            return
-
-        msg.text = Template(publish.text).render(Context(context))
-        msg.save()
-
-        if async==False or current_time >= publish.dt_start: #:TODO : 1 minutes 
-            #: sendmail right now
-            deliver_mail(mail_obj=msg) 
-        else :
-            #: sendmail later
-            deliver_mail.apply_async([msg.id],eta=msg.dt_start )
-
-    except Exception,e:
-        print traceback.format_exc()
-        log.error("generate_message()" + str(e))
+    if async==False or current_time >= mail_obj.publish.dt_start: #:TODO : 1 minutes 
+        #: sendmail right now
+        deliver_mail(mail_obj=mail_obj) 
+    else :
+        #: sendmail later
+        deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
+                                    eta=mail_obj.publish.dt_start )
 
 @task
-def deliver_mail(mail_id=None,mail_obj=None):
+def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
     ''' send actual mail
         
     .. todo::
@@ -258,11 +248,11 @@ def deliver_mail(mail_id=None,mail_obj=None):
         msg = mail_obj if mail_obj != None else Mail.objects.get(id=mail_id) 
         #:TODO: check mail status. If already "SENDING" or "CANCELD", don't send
         #       check schedue status. If already "CANCELD", don't send
-        send_mail(msg.publish.subject,     #:TODO: Message should have rendered subject
+        send_mail(msg.subject,     #:TODO: Message should have rendered subject
                   msg.text,
-                  msg.publish.site.authority_address, #:TODO: Owner "symbol" to be defined and compose from address
-                  [msg.member.address],
-                  return_path = msg.get_return_path(),  #: RETRUN-PATH
+                  msg.from_address , #:TODO: Owner "symbol" to be defined and compose from address
+                  msg.recipients,
+                  return_path = msg.return_path,  #: RETRUN-PATH
                   message_id = msg.mail_message_id,     #: MESSSAGE-ID
                   model_class= str(msg._meta),          #: for replay model class in logging
             )
@@ -297,8 +287,8 @@ def apply_publish(publish):
 
 @task
 def smtp_status(sender,msg,**extended):
-    from django.db.models.loading import get_model
     log = current_task.get_logger()
     log.debug('tasks.smtp_status:%s:%s:%s' % ( sender, msg,str(extended) ) ) 
-    model_class = get_model( *(extended.get('model_class','')+'.').split('.')[:2])
+#     model_class = get_model( *(extended.get('model_class','')+'.').split('.')[:2])
+    model_class = get_model( extended.get('model_class',''))
     model_class and getattr(model_class,'update_status',lambda *x,**y:None)(msg,**extended)

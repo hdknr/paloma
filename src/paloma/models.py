@@ -207,7 +207,6 @@ class Circle(models.Model):
                             ('site','symbol'),
                         )
 
-
 class Member(models.Model):
     ''' Member
 
@@ -296,22 +295,14 @@ class Publish(models.Model):
                     pass 
         return context
 
-class Mail(models.Model):
-    ''' Actual Mail Delivery 
-
-        - Message and status management
-    '''
-    publish = models.ForeignKey(Publish,verbose_name=u'Mail Schedule' )
-    ''' Mail Schedule'''
-
-    member = models.ForeignKey(Member,verbose_name=u'Target Member' )
-    ''' Target Mailbox'''
+class AbstractMail(models.Model):
+    ''' AbstractBase class '''
 
     mail_message_id = models.CharField(u'Message ID',max_length=100,db_index=True,unique=True)
-    ''' Mesage-ID header 
+    ''' Mesage-ID header - 'Message-ID: <local-part "@" domain>' '''
 
-        - 'Message-ID: <local-part "@" domain>'
-    '''
+    subject =  models.TextField(u'Message Subject',default=None,blank=True,null=True)
+    ''' Message Subject '''
 
     text = models.TextField(u'Message Text',default=None,blank=True,null=True)
     ''' Message text '''
@@ -323,6 +314,59 @@ class Mail(models.Model):
     created = models.DateTimeField(u'Created',auto_now_add=True)
     updated = models.DateTimeField(u'Updated',auto_now=True)
     smtped  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
+
+    _context_cache = None
+
+    def set_status(self,status=None,smtped=None,do_save=True):
+        self.smtped = smtped
+        self.status = status
+        if do_save:
+            self.save()
+
+    @classmethod
+    def update_status(cls,msg,**kwargs):
+        for m in cls.objects.filter(mail_message_id = kwargs.get('message_id','')):
+            m.set_status(msg,now())
+
+    @property
+    def context(self):
+        return None         #:TODO: override 
+
+    @property
+    def return_path(self):
+        return None         #:TODO: override
+
+    def render(self):
+        return None         #:TODO: override
+    
+    @property
+    def from_address(self):
+        return None         #:TODO: override
+
+    @property
+    def recipients(self):
+        return []         #:TODO: override
+
+    class Meta:
+        abstract= True
+
+class Mail(AbstractMail):
+    ''' Actual Mail Delivery 
+
+        - Message and status management
+    '''
+    publish = models.ForeignKey(Publish,verbose_name=u'Mail Schedule' )
+    ''' Mail Schedule'''
+
+    circle= models.ForeignKey(Circle,verbose_name=u'Target Circle', null=True,blank=True, )
+    ''' Target Circle '''
+
+    member = models.ForeignKey(Member,verbose_name=u'Target Member' )
+    ''' Target Mailbox'''
+
+    def __init__(self,*args,**kwargs):
+        super(Mail,self).__init__(*args,**kwargs)
+        self.render(do_save=False)  #:render without save.
 
     def __unicode__(self):
         return self.publish.__unicode__() + " " + self.member.__unicode__() 
@@ -339,21 +383,31 @@ class Mail(models.Model):
 
         super(Mail,self).save(force_insert,force_update,*args,**kwargs)
 
-    def set_status(self,status=None,smtped=None,do_save=True):
-        self.smtped = smtped
-        self.status = status
+    @property
+    def context(self):
+        self._context_cache = self._context_cache or\
+                 self.publish.get_context(self.circle,self.member.user)        
+        return self._context_cache
+
+    def render(self,do_save=True):
+        ''' render for member in circle'''
+        self.text = Template(self.publish.text).render(Context(self.context))
+        self.subject = Template(self.publish.subject).render(Context(self.context))
         if do_save:
             self.save()
 
-    @classmethod
-    def update_status(cls,msg,**kwargs):
-        for m in cls.objects.filter(mail_message_id = kwargs.get('message_id','')):
-            m.set_status(msg,now())
+    @property
+    def from_address(self):
+        return self.publish.site.authority_address      
 
-    def get_return_path(self):
+    @property
+    def return_path(self):
         ''' default return path '''
         return default_return_path( {"message_id" : self.id, 
                                     "domain": self.publish.site.domain } )
+    @property
+    def recipients(self):
+        return [self.member.address]
 
 class Provision(models.Model):  
     ''' Account Provision management 
@@ -483,3 +537,15 @@ try:
     from rsyslog import Systemevents,Systemeventsproperties
 except: 
     pass
+
+#class ActionMail(models.Model):
+#    ''' Mial for Action ''' 
+#
+#    base_text = models.ForeignKey(Text,verbose_name=u'Base Text',
+#                    null=True, on_delete=models.SET_NULL )
+#    ''' Base Text'''
+#
+#    provision = models.ForeignKey(Provision,verbose_name=u'Provisioning',
+#                    null=True, on_delete=models.SET_NULL )
+#                    )
+#    ''' Provisioning '''

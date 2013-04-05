@@ -38,4 +38,4 @@ class Command(GenericCommand):
             enqueue_mails_for_publish('manage', publish_id,False)
         else:
             print "Enqueue mails of a publish",publish_id,"Asynchronously"
-            enqueue_mails_for_publish.apply_async('manage',publish_id )
+            enqueue_mails_for_publish.delay('manage',publish_id )
