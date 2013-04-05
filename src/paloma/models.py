@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from json_field import JSONField                
 from django.db.models import AutoField,Sum,Max ,Q
 from django.db import models
 from django.contrib.auth.models import User
@@ -319,6 +319,9 @@ class AbstractMail(models.Model):
     updated = models.DateTimeField(u'Updated',auto_now=True)
     smtped  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
 
+    parameters = JSONField()        #: dict
+    ''' extra parameters '''
+
     _context_cache = None
 
     def set_status(self,status=None,smtped=None,do_save=True):
@@ -583,7 +586,10 @@ class ActionMail(AbstractMail):
 
     @property
     def context(self):
-        return { "provision" : self.provision , } 
+        ret =  { "provision" : self.provision , }   
+        if type(self.parameters) == dict:
+            ret.update( self.parameters ) 
+        return  ret
 
     def render(self,do_save=True):
         ''' render for member in circle'''
