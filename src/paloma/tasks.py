@@ -9,12 +9,12 @@ get_model = lambda p : django_get_model( *(p +'.').split('.')[:2] )
 
 from celery import current_task,app
 from celery.task import task
-
+import exceptions
 import logging
 import traceback
 
 from models import (
-        Publish,Circle,Member,Mail,
+        Publish,Circle,Member,Mail,Journal,
         default_return_path ,return_path_from_address
 )
 from mails import send_mail
@@ -40,10 +40,10 @@ def send_email(message, **kwargs):
     except Exception, e:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
+        send_email.retry(exc=e)
         logger.debug( str(e) +  traceback.format_exc().replace('\n','/') )
         logger.warning("tasks.send_email:Failed to send email message to %r, retrying.",
                     message.to)
-        send_email.retry(exc=e)
 @task
 def send_email_in_string(return_path,recipients, message_string,**extended):
     '''  message_stiring : string expression of Python email.message.Message object
@@ -51,7 +51,7 @@ def send_email_in_string(return_path,recipients, message_string,**extended):
     logger = current_task.get_logger()
     try:
         conn = get_connection(backend=BACKEND)
-        result = conn.send_message_string(return_path,recipents,message_string,**extended)
+        result = conn.send_message_string(return_path,recipients,message_string,**extended)
         logger.debug("send_email_in_string:Successfully sent email message to %r.", recipients)
         return result
     except Exception, e:
@@ -152,27 +152,28 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
     return journal and journal.id
 
 @task
-def process_journal(sender,journal_id=None,*args,**kwargs):
+def process_journal(journal_id=None,*args,**kwargs):
     """ main bounce woker
     """
-    from models import Journal
     log= current_task.get_logger()
     try:
-        journal = journal or Journal.objecs.get(id = journal_id )
+        journal = Journal.objects.get(id = journal_id )
     except Exception,e:
-        log.debug( str(e) )
+        log.debug("task.process_journal:"+ str(e) )
+        log.debug( traceback.format_exc().replace('\n','/') )
         return
 
+    print journal
     if journal.is_jailed == True:
         return
 
     #:Error Mail Handler 
     if process_error_mail(journal.recipient,journal.sender,journal.id):
-        log.debug("no error")
+        log.debug("task.process_journal:no error")
         return  
 
     #: actions
-    process_action(journal.sender, journal.recipent,journal)
+    process_action(journal.sender, journal.recipient,journal)
         
 @task
 def enqueue_publish(sender,publish_id=None,publish=None):
@@ -228,7 +229,7 @@ def enqueue_mail(mail_id=None,mail_obj=None,async=True,):
 
     current_time = now()
 
-    if async==False or current_time >= mail_obj.publish.dt_start: #:TODO : 1 minutes 
+    if async==False or mail_obj.is_timeup:
         #: sendmail right now
         deliver_mail(mail_obj=mail_obj) 
     else :
@@ -245,7 +246,7 @@ def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
     '''
     log = current_task.get_logger()
     try:
-        msg = mail_obj if mail_obj != None else Mail.objects.get(id=mail_id) 
+        msg = mail_obj if mail_obj != None else get_model(mail_class).objects.get(id=mail_id) 
         #:TODO: check mail status. If already "SENDING" or "CANCELD", don't send
         #       check schedue status. If already "CANCELD", don't send
         send_mail(msg.subject,     #:TODO: Message should have rendered subject
@@ -263,6 +264,7 @@ def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
     except Exception,e:
         #: STMP error... ?
         log.error("send_mail(): %s" % str(e))
+        log.debug( str(e) +  traceback.format_exc().replace('\n','/') )
         #:TODO: 
         #   - error mail to Message
         #   - change status of Message

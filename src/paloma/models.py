@@ -22,9 +22,13 @@ from utils import create_auto_secret,create_auto_short_secret,expire
 
 DEFAULT_RETURN_PATH_RE = r"bcmsg-(?P<message_id>\d+)@(?P<domain>.+)"
 DEFAULT_RETURN_PATH_FORMAT ="bcmsg-%(message_id)s@%(domain)s" 
-#
 return_path_from_address = lambda address : re.search(DEFAULT_RETURN_PATH_RE,address).groupdict()
 default_return_path= lambda param :  DEFAULT_RETURN_PATH_FORMAT  % param
+#
+RETURN_PATH_RE = r"^(?P<commnad>.+)-(?P<message_id>\d+)@(?P<domain>.+)"
+RETURN_PATH_FORMAT ="%(command)s-%(message_id)s@%(domain)s" 
+read_return_path= lambda address : re.search(RETURN_PATH_RE,address).groupdict()
+make_return_path= lambda param :  RETURN_PATH_FORMAT  % param
 #
 #
 class Domain(models.Model):
@@ -345,7 +349,7 @@ class AbstractMail(models.Model):
 
     @property
     def recipients(self):
-        return []         #:TODO: override
+        return []           #:TODO: override
 
     class Meta:
         abstract= True
@@ -408,6 +412,10 @@ class Mail(AbstractMail):
     @property
     def recipients(self):
         return [self.member.address]
+
+    @property
+    def is_timeup(self):
+        return  now() >= self.publish.dt_start
 
 class Provision(models.Model):  
     ''' Account Provision management 
@@ -538,14 +546,66 @@ try:
 except: 
     pass
 
-#class ActionMail(models.Model):
-#    ''' Mial for Action ''' 
-#
-#    base_text = models.ForeignKey(Text,verbose_name=u'Base Text',
-#                    null=True, on_delete=models.SET_NULL )
-#    ''' Base Text'''
-#
-#    provision = models.ForeignKey(Provision,verbose_name=u'Provisioning',
-#                    null=True, on_delete=models.SET_NULL )
-#                    )
-#    ''' Provisioning '''
+class ActionMail(AbstractMail):
+    ''' Mial for Action ''' 
+
+    base_text = models.ForeignKey(Text,verbose_name=u'Base Text',
+                    null=True, on_delete=models.SET_NULL )
+    ''' Base Text'''
+
+    provision = models.ForeignKey(Provision,verbose_name=u'Provisioning',
+                    null=True, on_delete=models.SET_NULL )
+    ''' Provisioning '''
+
+    def __init__(self,*args,**kwargs):
+        super(ActionMail,self).__init__(*args,**kwargs)
+        self.render(do_save=False)  #:render without save.
+
+    def __unicode__(self):
+        try:
+            return self.base_text.__unicode__() + " " + self.provision.__unicode__() 
+        except:
+            return unicode(self.id)
+
+    def save(self,force_insert=False,force_update=False,*args,**kwargs):         
+        ''' override save() '''
+        
+        if self.base_text and self.provision:
+            digest = hashlib.md5('%d%d%s' %( 
+                    self.provision.id,self.base_text.id,self.provision.prospect)).hexdigest()
+    
+            self.mail_message_id = "<a-%d-%d-%s@%s>" % ( 
+                                self.provision.id,self.base_text.id, 
+                                    digest[:10],
+                                    self.provision.circle.site.domain )  #:
+
+        super(ActionMail,self).save(force_insert,force_update,*args,**kwargs)
+
+    @property
+    def context(self):
+        return { "provision" : self.provision , } 
+
+    def render(self,do_save=True):
+        ''' render for member in circle'''
+        if self.base_text:
+            self.text = Template(self.base_text.text).render(Context(self.context))
+            self.subject = Template(self.base_text.subject).render(Context(self.context))
+            if do_save:
+                self.save()
+
+    @property
+    def from_address(self):
+        return self.provision.circle.site.authority_address      
+
+    @property
+    def return_path(self):
+        ''' default return path '''
+        return make_return_path( {"command" : "action","message_id" : self.id, 
+                                  "domain": self.provision.circle.site.domain } )
+    @property
+    def recipients(self):
+        return [self.provision.prospect]
+
+    @property
+    def is_timeup(self):
+        return  True    #:Always True

@@ -52,3 +52,5 @@ def process_action(sender,recipient ,journal):
                         for k,v in __import__(actions,{},{},['*'] ).__dict__.items() )
         except Exception,e:
             log.debug('process_action:'+str(e) )
+            log.debug( str(e) +  traceback.format_exc().replace('\n','/') )
+

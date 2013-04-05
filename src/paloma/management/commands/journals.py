@@ -9,26 +9,23 @@ import os
 
 from . import GenericCommand
 from ...models import Journal
-from ...actions import process_action
+from ...tasks import process_journal
 
 
 class Command(GenericCommand):
     ''' paloma postfix management
     '''
-    args = ''
-    help = ''
 
     option_list = GenericCommand.option_list + (
         )
     ''' Command Option '''
 
     def handle_process(self,journal_id,*args,**options):
-        '''　add Site
+        '''　process journals
         '''
         
         try:
-            j = Journal.objects.get(id=journal_id )
-            process_action(j.sender,j.recipient, j )
+            process_journal(journal_id)
         except Journal.DoesNotExist,e:
             print journal_id , "was not found"
 
