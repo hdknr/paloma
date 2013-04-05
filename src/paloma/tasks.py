@@ -226,7 +226,12 @@ def enqueue_mail(sender,publish_id,circle_id, member_id,async=True ):
         member= Member.objects.get(id=member_id)
 
         context = publish.get_context(circle,member.user)        
-        msg,craeted= Mail.objects.get_or_create(publish=publish,member=member ) #:re-use the same mail
+        msg,created= Mail.objects.get_or_create(publish=publish,member=member ) #:re-use the same mail
+
+        if created ==False and msg.smtped !=None:
+            log.warning("tasks.enqueue_mail: publish(%s) to member(%s) is already sent." % (publish,member))
+            return
+
         msg.text = Template(publish.text).render(Context(context))
         msg.save()
 
