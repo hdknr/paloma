@@ -604,7 +604,9 @@ class ActionMail(AbstractMail):
                                   "domain": self.provision.circle.site.domain } )
     @property
     def recipients(self):
-        return [self.provision.prospect]
+           
+        return [self.provision.prospect] if self.provision.member == None else\
+               [self.provision.member.address]
 
     @property
     def is_timeup(self):
