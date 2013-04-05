@@ -9,7 +9,6 @@ from django.core.mail.message import sanitize_address
 
 from email.utils import parseaddr
 
-from tasks import send_email,journalize ,smtp_status
 from utils import class_path
 
 class PalomaEmailBackend(BaseEmailBackend):
@@ -22,6 +21,7 @@ class PalomaEmailBackend(BaseEmailBackend):
 
             - This implementation delegates STMP task to Celery worker.
         '''
+        from tasks import send_email
         results = []
         for msg in email_messages:
             results.append(send_email.delay(msg, **kwargs)) #:asynchronous send_email 
@@ -43,6 +43,7 @@ class JournalEmailBackend(BaseEmailBackend):
             - DO ERROR CHECK!!!! 
             - DO ERROR TRACE!!!!
         ''' 
+        from tasks import journalize
         try:
             sender  = parseaddr( email_messages[0].from_email )[1]
             recipient =parseaddr( email_messages[0].to[0] )[1] 
@@ -71,26 +72,39 @@ class SmtpEmailBackend(DjangoEmailBackend):
         #:Extended parameters for SMTP
         extended = getattr(email_message,"extended",{} )
          
-        from_email = sanitize_address(
+        from_address = sanitize_address(
                 extended.get('return_path',None) or email_message.from_email
                 , email_message.encoding)
         recipients = [sanitize_address(addr, email_message.encoding)
                       for addr in email_message.recipients()]
 
         #: Python standard email.message.Message
-        mailobj = email_message.message()
+        mail_obj = email_message.message()
+        
+        return  self.send_message_object(from_address, recipients,mail_obj,**extended)
     
+    def send_message_object(self,from_address, recipients,mail_obj,**extended):
+        ''' directly send mail in Python standnard Mail instance
+        '''
         #: message_id ->Message-ID
         if extended.has_key('message_id'):
-            if mailobj.has_key('Message-ID'):
-                mailobj.replace_header('Message-ID',extended['message_id'])
+            if mail_obj.has_key('Message-ID'):
+                mail_obj.replace_header('Message-ID',extended['message_id'])
             else:
-                mailobj.add_header('Message-ID',extended['message_id'])
+                mail_obj.add_header('Message-ID',extended['message_id'])
 
+        return self.send_message_string(
+                    from_address, recipients,mail_obj.as_string() ,**extended)
+
+
+    def send_message_string(self,from_address,recipients,message_string,**extended):
+        ''' directly send mail in string format of Python standnard Mail
+        '''
+        from tasks import smtp_status
         try:
             #: connection: smtplib.SMTP
             self.connection.sendmail(
-                    from_email, recipients,mailobj.as_string() )
+                    from_address , recipients, message_string )
             smtp_status.delay( class_path(self),'OK', **extended )
         except Exception,e:
             smtp_status.delay( class_path(self),class_path(e), **extended )
