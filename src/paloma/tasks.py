@@ -211,6 +211,11 @@ def enqueue_mails_for_publish(sender,publish_id,async=True):
             for member in circle.member_set.exclude(user=None):
                 msg,created= Mail.objects.get_or_create(
                                 publish=publish,circle=circle,member=member ) #:re-use the same mail
+
+                if created==False:
+                    msg.render()
+                    msg.save()
+
                 #: TODO: Exclude  user == None or is_active ==False or forward == None
                 if async:
                     enqueue_mail.delay(mail_id=msg.id )

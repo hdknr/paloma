@@ -319,7 +319,7 @@ class AbstractMail(models.Model):
     updated = models.DateTimeField(u'Updated',auto_now=True)
     smtped  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
 
-    parameters = JSONField()        #: dict
+    parameters = JSONField(blank=True, null=True, evaluate_formfield=True,)        #: dict
     ''' extra parameters '''
 
     _context_cache = None
@@ -398,10 +398,14 @@ class Mail(AbstractMail):
 
     def render(self,do_save=True):
         ''' render for member in circle'''
-        self.text = Template(self.publish.text).render(Context(self.context))
-        self.subject = Template(self.publish.subject).render(Context(self.context))
-        if do_save:
-            self.save()
+        try:
+            if getattr(self,'publish',None) != None:
+                self.text = Template(self.publish.text).render(Context(self.context))
+                self.subject = Template(self.publish.subject).render(Context(self.context))
+                if do_save:
+                    self.save()
+        except Exception,e:
+            print e
 
     @property
     def from_address(self):

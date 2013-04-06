@@ -41,6 +41,11 @@ class GenericCommand(BaseCommand):
             default=None,
             help=u'Description'),
 
+        make_option('--eta',
+            action='store',
+            dest='eta',
+            default=None,
+            help=u'Estimated Time of Arrival'),
         make_option('--encoding',
             action='store',
             dest='encoding',

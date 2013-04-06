@@ -36,6 +36,8 @@ class Command(GenericCommand):
         if options['sync']:
             print "Enqueue mails of a publish",publish_id,"Synchronously"
             enqueue_mails_for_publish('manage', publish_id,False)
+        elif options['eta']:
+            print "Enqueue mails of a publish",publish_id,"Asynchronously for ",options['eta']
         else:
             print "Enqueue mails of a publish",publish_id,"Asynchronously"
             enqueue_mails_for_publish.delay('manage',publish_id )
