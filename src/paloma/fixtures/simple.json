@@ -26,7 +26,7 @@
 },
 {
   "pk": 1, 
-  "model": "paloma.text", 
+  "model": "paloma.template", 
   "fields": {
     "text": "\u4ee5\u4e0b\u306eURL\u306b\u30a2\u30af\u30bb\u30b9\u3057\u3066\u767b\u9332\u3057\u3066\u304f\u3060\u3055\u3044 : \r\n\r\n{{ provision.url  }} \r\n\r\n", 
     "subject": "\u767b\u9332URL\u3092\u9001\u308a\u307e\u3057\u305f", 
@@ -36,7 +36,7 @@
 },
 {
   "pk": 2, 
-  "model": "paloma.text", 
+  "model": "paloma.template", 
   "fields": {
     "text": "\u30d1\u30b9\u30ef\u30fc\u30c9\u3092\u518d\u8a2d\u5b9a\u3057\u307e\u3057\u305f:\r\n\r\n    {{ password }}\r\n\r\n\u73fe\u5728\u30a2\u30ab\u30a6\u30f3\u30c8\u304c\u7121\u52b9\u306b\u306a\u3063\u3066\u3044\u307e\u3059\u306e\u3067\u3001\u4e0b\u8a18\u306eURL \u306b\u30a2\u30af\u30bb\u30b9\u3057\u3066\u30a2\u30ab\u30a6\u30f3\u30c8\u3092\u6709\u52b9\u306b\u3057\u305f\u3042\u3068\u3067\r\n\u65b0\u3057\u3044\u30d1\u30b9\u30ef\u30fc\u30c9\u3067\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u304f\u3060\u3055\u3044\u3002\r\n  \r\n    {{ provision.url }}\r\n", 
     "subject": "\u30d1\u30b9\u30ef\u30fc\u30c9\u518d\u8a2d\u5b9a", 
@@ -89,7 +89,7 @@
 },
 {
   "pk": 3, 
-  "model": "paloma.mail", 
+  "model": "paloma.message", 
   "fields": {
     "mail_message_id": "<p-2-6-436d4d6f2a@tact.lafoglia.org>", 
     "smtped": null, 
@@ -97,7 +97,6 @@
     "status": null, 
     "created": "2013-04-04T18:50:41Z", 
     "text": "\u3088\u308d\u3057\u304f", 
-    "publish": 2, 
     "member": 6
   }
 },

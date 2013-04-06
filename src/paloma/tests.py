@@ -12,22 +12,97 @@ class TaskTest(TestCase):
         ''' python manage.py test paloma.TaskTest.test_smtp_status '''
         from tasks import smtp_status 
         from django.contrib.auth.models import User      
-        from paloma.models import Mail
+        from paloma.models import Message
 
         sender="test"
         message="OK"
-        mail = Mail.objects.all()[0]
+        mail = Message.objects.all()[0]
         mail.set_status()           #:reset
         self.assertIsNone(mail.status)
         self.assertIsNone(mail.smtped)
         
         mid =mail.mail_message_id
 
-        smtp_status( sender,message,model_class='paloma.mail',message_id=mid,)
+        smtp_status( sender,message,model_class='paloma.message',message_id=mid,)
 
-        mail = Mail.objects.all()[0]
+        mail = Message.objects.all()[0]
         self.assertEqual(mail.status,message)
         self.assertIsNotNone(mail.smtped )
+
+class MessageTest(TestCase):
+    fixtures=['auth.json','simple.json',]
+    def test_adhoc(self):
+        ''' python manage.py test paloma.MessageTest.test_adhoc'''
+
+        from paloma.models import Message,Member,Journal
+        from paloma.tasks import deliver_mail,smtp_status
+        from django.conf import settings
+
+        self.assertEqual(settings.EMAIL_BACKEND, 'django.core.mail.backends.locmem.EmailBackend')
+
+        message,creaed = Message.objects.get_or_create(
+                            mail_message_id='simple',
+                            member=Member.objects.all()[0])
+
+        message.subject="hello"
+        message.text = "it's me."
+        message.save()
+
+        deliver_mail(mail_obj=message)
+
+        from django.core.mail import outbox,EmailMessage
+        self.assertTrue(isinstance(outbox[0],EmailMessage) )
+        self.assertEqual(outbox[0].from_email, message.template.site.authority_address )
+        self.assertTrue(message.member.address in outbox[0].to )
+
+        del outbox[0]           #:clear
+
+        non_member="hoge@hdknr.com"
+        message_id='simple2'
+        message,creaed = Message.objects.get_or_create(
+                            mail_message_id=message_id,
+                            recipient=non_member,)
+
+        message.subject="hello"
+        message.text = "it's me."
+        message.save()
+
+        deliver_mail(mail_obj=message)
+        self.assertTrue(isinstance(outbox[0],EmailMessage) )
+        self.assertEqual(outbox[0].from_email, message.template.site.authority_address )
+        self.assertTrue(non_member in outbox[0].to )
+
+        self.assertTrue(message.status==None)
+        self.assertTrue(message.smtped == None)
+
+        smtp_status("","OK",model_class=str(message._meta),message_id =  message_id )
+        
+        message = Message.objects.get(mail_message_id=message_id)
+        self.assertTrue(message.status=='OK')
+        self.assertTrue(message.smtped != None)
+
+    def test_render(self):
+        ''' python manage.py test paloma.MessageTest.test_render'''
+
+        from paloma.models import Message,Member,Journal,Template
+        from django.conf import settings
+
+        template = Template.get_default_template(name="TEST")
+
+        message,creaed = Message.objects.get_or_create(
+                            template=template,
+                            mail_message_id='simple',
+                            recipient="test@test.com")
+
+        message.render() 
+        self.assertEqual(message.subject,"")
+        self.assertEqual(message.text,"")
+
+        template.subject = "name={{ name}}"
+        template.save()
+
+        self.assertTrue( message.subject.find("xxxx") >0 )
+        
 #
 #class SerTest(TestCase):
 #    ''' Serialization Test'''

@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 from django.conf import settings
-from django.template import Template,Context
+from django import template # import Template,Context
 
 from email import message_from_string
 
@@ -126,43 +126,12 @@ class Site(models.Model):
     def __unicode__(self):
         return self.domain
 
-class Text(models.Model):
-    ''' Site Notice Text '''
-
-    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
-    ''' Owner Site'''
-
-    name = models.CharField(u'Notice Name',max_length=20,db_index=True,)
-    ''' Notice Name'''
-
-    subject= models.CharField(u'Subject',max_length=100 ,)
-    ''' Subject '''
-
-    text =  models.TextField(u'Text',max_length=100 ,)
-    ''' Text '''
-
-    def render(self,*args,**kwargs):
-        ''' 
-            :param kwargs: Context dictionary 
-        '''        
-        return tuple([Template(t).render(Context(kwargs)) 
-                for t in [self.subject,self.text] ])
-
-    def sendmail(self,return_path,tos,*args,**kwargs):
-        ''' sendmail '''
-        from mails import send_mail
-        subject,body = self.render(*args,**kwargs)
-        send_mail(subject,body,
-            self.site.authority_address,
-            tos,
-            return_path=return_path )
-
-    def __unicode__(self):
-        return self.name
-
-    class Meta:
-        unique_together = ( ('site','name') ,
-                        )
+    @classmethod
+    def app_site(cls):
+        return Site.objects.get_or_create(
+                    name=getattr(settings,'PALOMA_NAME','paloma'),
+                    domain=getattr(settings,'PALOMA_DEFAULT_DOMAIN','example.com'),
+                )[0]
 
 class Circle(models.Model):
     ''' Circle 
@@ -191,6 +160,10 @@ class Circle(models.Model):
     @property
     def main_address(self):
         return  "%s@%s" % ( self.symbol, self.site.domain)
+
+    @property
+    def domain(self):
+        return self.site.domain
 
     def save(self, **kwargs ):
         if self.is_default:
@@ -263,13 +236,16 @@ class Publish(models.Model):
     publisher = models.ForeignKey(User, verbose_name=u'Publisher' )
     ''' publisher '''
 
+    messages= models.ManyToManyField('Message',through="Publication",
+                                        related_name="message_set",)
+
     subject= models.CharField(u'Subject',max_length=101 ,)
     ''' Subject '''
 
     text =  models.TextField(u'Text',max_length=100 ,)
     ''' Text '''
 
-    circles= models.ManyToManyField(Circle,verbose_name=u'Traget Circles' )
+    circles= models.ManyToManyField(Circle,verbose_name=u'Target Circles' )
     ''' Circle'''
 
     task= models.CharField(u'Task ID',max_length=100 ,default=None,null=True,blank=True,)
@@ -299,18 +275,111 @@ class Publish(models.Model):
                     pass 
         return context
 
-class AbstractMail(models.Model):
-    ''' AbstractBase class '''
+####
+class JournalManager(models.Manager):
+    ''' Message Manager'''
+    def handle_incomming_mail(self,sender,is_jailed,recipient,mssage ):
+        ''' 
+            :param mesage: :py:class:`email.Message`
+        '''
+
+class Journal(models.Model):
+    ''' Raw Message
+
+    '''
+    dt_created=  models.DateTimeField(u'Journaled Datetime'  ,help_text=u'Journaled datetime', auto_now_add=True )
+    ''' Journaled Datetime '''
+
+    sender= models.CharField(u'Sender',max_length=100)
+    ''' sender '''
+    
+    recipient= models.CharField(u'Receipient',max_length=100)
+    ''' recipient '''
+
+    text = models.TextField(u'Message Text',default=None,blank=True,null=True)
+    ''' Message text '''
+
+    is_jailed = models.BooleanField(u'Jailed Message',default=False )
+    ''' Jailed(Reciepient missing emails have been journaled) if true '''
+
+    def mailobject(self):
+        ''' return mail object
+
+            :rtype: email.message.Message
+        '''
+        return message_from_string(self.text)
+
+    class Meta:
+        verbose_name=u'Journal'
+        verbose_name_plural=u'Journals'
+
+try:
+    from rsyslog import Systemevents,Systemeventsproperties
+except: 
+    pass
+
+
+####################################################################################
+
+class Template(models.Model):
+    ''' Site Notice Text '''
+
+    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    ''' Owner Site'''
+
+    name = models.CharField(u'Notice Name',max_length=20,db_index=True,)
+    ''' Notice Name'''
+
+    subject= models.CharField(u'Subject',max_length=100 ,default='',)
+    ''' Subject '''
+
+    text =  models.TextField(u'Text',max_length=100 ,default='',)
+    ''' Text '''
+
+    @classmethod
+    def get_default_template(cls,name='DEFAULT_TEMPLATE',site=None):
+        site = site or Site.app_site()
+        return Template.objects.get_or_create(site=site,name=name,)[0] 
+
+    def render(self,*args,**kwargs):
+        ''' 
+            :param kwargs: Context dictionary 
+        '''        
+        return tuple([template.Template(t).render(template.Context(kwargs)) 
+                for t in [self.subject,self.text] ])
+
+    def __unicode__(self):
+        return self.name
+ 
+    class Meta:
+        unique_together = ( ('site','name') ,)
+
+class Message(models.Model):
+    ''' Message '''
 
     mail_message_id = models.CharField(u'Message ID',max_length=100,db_index=True,unique=True)
     ''' Mesage-ID header - 'Message-ID: <local-part "@" domain>' '''
+
+    template = models.ForeignKey(Template,verbose_name=u'Template',
+                    null=True, on_delete=models.SET_NULL )
+    ''' Message Template '''
+
+    member =  models.ForeignKey(Member,verbose_name=u'Member',
+                    null=True,default=None,on_delete=models.SET_NULL )
+    ''' Recipient Member (member.circle is Sender)'''
+
+    circle=  models.ForeignKey(Circle,verbose_name=u'Circle',
+                    null=True,default=None,on_delete=models.SET_NULL )
+    ''' Target Circle ( if None, Site's default circle is used.)''' 
+
+    recipient =models.EmailField(u'recipient',max_length=50,default=None,blank=True,null=True)
+    ''' Recipient  (for non-Member )'''
 
     subject =  models.TextField(u'Message Subject',default=None,blank=True,null=True)
     ''' Message Subject '''
 
     text = models.TextField(u'Message Text',default=None,blank=True,null=True)
     ''' Message text '''
-    #: TODO: delivery statusm management
 
     status=models.CharField(u'Status',max_length=50,default=None,blank=True,null=True)
     ''' SMTP Status '''
@@ -323,6 +392,62 @@ class AbstractMail(models.Model):
     ''' extra parameters '''
 
     _context_cache = None
+    ''' Base Text'''
+
+    def __init__(self,*args,**kwargs):
+        super(Message,self).__init__(*args,**kwargs)
+        if self.template == None:
+            self.template = Template.get_default_template()
+        self.render(do_save=False)  #:render without save.
+
+    def __unicode__(self):
+        try:
+            return self.template.__unicode__() + str(self.recipients )
+        except:
+            return unicode(self.id)
+
+#    def save(self,force_insert=False,force_update=False,*args,**kwargs):         
+#        ''' override save() '''
+#        
+#        super(Message,self).save(force_insert,force_update,*args,**kwargs)
+
+    @property
+    def recipients(self):       #:plural!!!!
+        return [ self.recipient ] if self.recipient else [ self.member.address ]
+
+    def context(self,**kwargs):
+        ret =  { "member" : self.member, "template": self.template,}
+        ret.update(kwargs)
+        if type(self.parameters) == dict:
+            ret.update( self.parameters ) 
+        return  ret
+
+    def render(self,do_save=True,**kwargs):
+        ''' render for member in circle'''
+        if self.template:
+            self.text = template.Template(
+                            self.template.text
+                            ).render(template.Context(self.context(**kwargs)))
+            self.subject = template.Template(
+                            self.template.subject
+                            ).render(template.Context(self.context(**kwargs)))
+            if do_save:
+                self.save()
+
+    @property
+    def from_address(self):
+        circle = self.circle or self.template.site.default_circle
+        return circle.main_address
+
+    @property
+    def return_path(self):
+        ''' default return path '''
+        return make_return_path( {"command" : "msg","message_id" : self.id,
+                                  "domain": self.template.site.domain } )
+
+    @property
+    def is_timeup(self):
+        return  True    #:Always True
 
     def set_status(self,status=None,smtped=None,do_save=True):
         self.smtped = smtped
@@ -335,98 +460,8 @@ class AbstractMail(models.Model):
         for m in cls.objects.filter(mail_message_id = kwargs.get('message_id','')):
             m.set_status(msg,now())
 
-    @property
-    def context(self):
-        return None         #:TODO: override 
-
-    @property
-    def return_path(self):
-        return None         #:TODO: override
-
-    def render(self):
-        return None         #:TODO: override
-    
-    @property
-    def from_address(self):
-        return None         #:TODO: override
-
-    @property
-    def recipients(self):
-        return []           #:TODO: override
-
-    class Meta:
-        abstract= True
-
-class Mail(AbstractMail):
-    ''' Actual Mail Delivery 
-
-        - Message and status management
-    '''
-    publish = models.ForeignKey(Publish,verbose_name=u'Mail Schedule' )
-    ''' Mail Schedule'''
-
-    circle= models.ForeignKey(Circle,verbose_name=u'Target Circle', null=True,blank=True, )
-    ''' Target Circle '''
-
-    member = models.ForeignKey(Member,verbose_name=u'Target Member' )
-    ''' Target Mailbox'''
-
-    def __init__(self,*args,**kwargs):
-        super(Mail,self).__init__(*args,**kwargs)
-        self.render(do_save=False)  #:render without save.
-
-    def __unicode__(self):
-        return self.publish.__unicode__() + " " + self.member.__unicode__() 
-
-    def save(self,force_insert=False,force_update=False,*args,**kwargs):         
-        ''' override save() '''
-
-        digest = hashlib.md5('%d%d%s' %( 
-                self.publish.id,self.member.id,self.member.address )).hexdigest()
-        self.mail_message_id = "<p-%d-%d-%s@%s>" % ( 
-                            self.publish.id,self.member.id, 
-                                digest[:10],
-                                self.publish.site.domain )  #:
-
-        super(Mail,self).save(force_insert,force_update,*args,**kwargs)
-
-    @property
-    def context(self):
-        self._context_cache = self._context_cache or\
-                 self.publish.get_context(self.circle,self.member.user)        
-        return self._context_cache
-
-    def render(self,do_save=True):
-        ''' render for member in circle'''
-        try:
-            if getattr(self,'publish',None) != None:
-                self.text = Template(self.publish.text).render(Context(self.context))
-                self.subject = Template(self.publish.subject).render(Context(self.context))
-                if do_save:
-                    self.save()
-        except Exception,e:
-            print e
-
-    @property
-    def from_address(self):
-        return self.publish.site.authority_address      
-
-    @property
-    def return_path(self):
-        ''' default return path '''
-        return default_return_path( {"message_id" : self.id, 
-                                    "domain": self.publish.site.domain } )
-    @property
-    def recipients(self):
-        return [self.member.address]
-
-    @property
-    def is_timeup(self):
-        return  now() >= self.publish.dt_start
-
 class Provision(models.Model):  
     ''' Account Provision management 
-
     '''
 
     member= models.OneToOneField(Member,verbose_name=u'Member' 
@@ -510,114 +545,54 @@ class Provision(models.Model):
         if save:
             self.save()
 
-####
-class JournalManager(models.Manager):
-    ''' Message Manager'''
-    def handle_incomming_mail(self,sender,is_jailed,recipient,mssage ):
-        ''' 
-            :param mesage: :py:class:`email.Message`
-        '''
 
-class Journal(models.Model):
-    ''' Raw Message
+class PublicationManager(models.Manager):
+    def publish(self,publish,circle,member):
+        assert all([publish,circle,member])
+        ret,created = self.get_or_create(
+                publish = publish,
+                message = Message.objects.get_or_create(
+                            mail_message_id ="<pub-%d-%d-%d@%s>" %( publish.id,circle.id,member.id,circle.domain),
+                            template =Template.get_default_template('PUBLICATION'),
+                            circle=circle,
+                            member=member,)[0] #:(object,created )
+            )
+        if created ==False:
+            ret.render()
+        return ret
+
+class Publication(models.Model):
+    ''' Each Published Item
 
     '''
-    dt_created=  models.DateTimeField(u'Journaled Datetime'  ,help_text=u'Journaled datetime', auto_now_add=True )
-    ''' Journaled Datetime '''
+    publish = models.ForeignKey(Publish,verbose_name=u'Mail Schedule' )
+    ''' Mail Schedule'''
 
-    sender= models.CharField(u'Sender',max_length=100)
-    ''' sender '''
-    
-    recipient= models.CharField(u'Receipient',max_length=100)
-    ''' recipient '''
+    message = models.ForeignKey(Message,verbose_name=u'Mail Message' )
+    ''' Message '''
 
-    text = models.TextField(u'Message Text',default=None,blank=True,null=True)
-    ''' Message text '''
+    objects = PublicationManager()
+#    circle= models.ForeignKey(Circle,verbose_name=u'Target Circle', null=True,blank=True, )
+#    ''' Target Circle '''
+#
+#    member = models.ForeignKey(Member,verbose_name=u'Target Member' )
+#    ''' Target Mailbox'''
+#
+    def __init_(self,*args,**kwargs):
+        super(Publication,self).__init__(*args,**kwargs)
+        self.render()
 
-    is_jailed = models.BooleanField(u'Jailed Message',default=False )
-    ''' Jailed(Reciepient missing emails have been journaled) if true '''
-
-    def mailobject(self):
-        ''' return mail object
-
-            :rtype: email.message.Message
-        '''
-        return message_from_string(self.text)
-
-    class Meta:
-        verbose_name=u'Journal'
-        verbose_name_plural=u'Journals'
-
-try:
-    from rsyslog import Systemevents,Systemeventsproperties
-except: 
-    pass
-
-class ActionMail(AbstractMail):
-    ''' Mial for Action ''' 
-
-    base_text = models.ForeignKey(Text,verbose_name=u'Base Text',
-                    null=True, on_delete=models.SET_NULL )
-    ''' Base Text'''
-
-    provision = models.ForeignKey(Provision,verbose_name=u'Provisioning',
-                    null=True, on_delete=models.SET_NULL )
-    ''' Provisioning '''
-
-    def __init__(self,*args,**kwargs):
-        super(ActionMail,self).__init__(*args,**kwargs)
-        self.render(do_save=False)  #:render without save.
-
-    def __unicode__(self):
-        try:
-            return self.base_text.__unicode__() + " " + self.provision.__unicode__() 
-        except:
-            return unicode(self.id)
-
-    def save(self,force_insert=False,force_update=False,*args,**kwargs):         
-        ''' override save() '''
-        
-        if self.base_text and self.provision:
-            digest = hashlib.md5('%d%d%s' %( 
-                    self.provision.id,self.base_text.id,self.provision.prospect)).hexdigest()
-    
-            self.mail_message_id = "<a-%d-%d-%s@%s>" % ( 
-                                self.provision.id,self.base_text.id, 
-                                    digest[:10],
-                                    self.provision.circle.site.domain )  #:
-
-        super(ActionMail,self).save(force_insert,force_update,*args,**kwargs)
-
-    @property
-    def context(self):
-        ret =  { "provision" : self.provision , }   
-        if type(self.parameters) == dict:
-            ret.update( self.parameters ) 
+    def context(self,**kwargs):
+        ret =  self.message.context(**kwargs)
+        ret['publish']=self.publish
         return  ret
 
-    def render(self,do_save=True):
+    def render(self,**kwargs):
         ''' render for member in circle'''
-        if self.base_text:
-            self.text = Template(self.base_text.text).render(Context(self.context))
-            self.subject = Template(self.base_text.subject).render(Context(self.context))
-            if do_save:
-                self.save()
-
-    @property
-    def from_address(self):
-        return self.provision.circle.site.authority_address      
-
-    @property
-    def return_path(self):
-        ''' default return path '''
-        return make_return_path( {"command" : "action","message_id" : self.id, 
-                                  "domain": self.provision.circle.site.domain } )
-    @property
-    def recipients(self):
-           
-        return [self.provision.prospect] if self.provision.member == None else\
-               [self.provision.member.address]
-
-    @property
-    def is_timeup(self):
-        return  True    #:Always True
+        self.message.text = template.Template(
+                            self.publish.text
+                            ).render(template.Context(self.context(**kwargs)))
+        self.message.subject = template.Template(
+                            self.publish.subject
+                            ).render(template.Context(self.context(**kwargs)))
+        self.message.save()

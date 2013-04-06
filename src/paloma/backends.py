@@ -96,7 +96,6 @@ class SmtpEmailBackend(DjangoEmailBackend):
         return self.send_message_string(
                     from_address, recipients,mail_obj.as_string() ,**extended)
 
-
     def send_message_string(self,from_address,recipients,message_string,**extended):
         ''' directly send mail in string format of Python standnard Mail
         '''

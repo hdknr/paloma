@@ -64,11 +64,6 @@ class SiteAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Site._meta.fields ])
 admin.site.register(Site,SiteAdmin)
 
-### Text 
-class TextAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Text._meta.fields ])
-admin.site.register(Text,TextAdmin)
-
 ### Circle 
 class CircleAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Circle._meta.fields ])
@@ -102,26 +97,33 @@ class PublishAdmin(admin.ModelAdmin):
 
 admin.site.register(Publish,PublishAdmin)
 
-### Mail 
-class MailAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Mail._meta.fields ])
-admin.site.register(Mail,MailAdmin)
-
 
 ### Provision
 class ProvisionAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Provision._meta.fields ])
 admin.site.register(Provision,ProvisionAdmin)
 
-### ActionMail 
-class ActionMailAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in ActionMail._meta.fields ])
-admin.site.register(ActionMail,ActionMailAdmin)
-
 ### Journal 
 class JournalAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Journal._meta.fields ])
 admin.site.register(Journal,JournalAdmin)
+
+##############
+
+### Template 
+class TemplateAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Template._meta.fields ])
+admin.site.register(Template,TemplateAdmin)
+
+### Message
+class MessageAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Message._meta.fields ])
+admin.site.register(Message,MessageAdmin)
+
+### Publication
+class PublicationAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Publication._meta.fields ])
+admin.site.register(Publication,PublicationAdmin)
 
 #################
 # rsyslog
@@ -129,3 +131,4 @@ try:
     from rsyslog import SystemeventsAdmin,SystemeventspropertiesAdmin
 except:
     pass
+

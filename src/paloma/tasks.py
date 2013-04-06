@@ -14,7 +14,8 @@ import logging
 import traceback
 
 from models import (
-        Publish,Circle,Member,Mail,Journal,
+        Publish,Publication,Circle,Member,Message,
+        Journal,
         default_return_path ,return_path_from_address
 )
 from mails import send_mail
@@ -209,25 +210,31 @@ def enqueue_mails_for_publish(sender,publish_id,async=True):
         publish = Publish.objects.get(id = publish_id ) 
         for circle in publish.circles.all():
             for member in circle.member_set.exclude(user=None):
-                msg,created= Mail.objects.get_or_create(
-                                publish=publish,circle=circle,member=member ) #:re-use the same mail
-
-                if created==False:
-                    msg.render()
-                    msg.save()
-
-                #: TODO: Exclude  user == None or is_active ==False or forward == None
+                pub= Publication.objects.publish(publish,circle,member)
                 if async:
-                    enqueue_mail.delay(mail_id=msg.id )
+                    enqueue_mail.delay(mail_id=pub.message.id)
                 else:
-                    enqueue_mail(mail_obj=msg)
+                    enqueue_mail(mail_obj=pub.message)
+
+#                msg,created= Mail.objects.get_or_create(
+#                                publish=publish,circle=circle,member=member ) #:re-use the same mail
+#
+#                if created==False:
+#                    msg.render()
+#                    msg.save()
+#
+#                #: TODO: Exclude  user == None or is_active ==False or forward == None
+#                if async:
+#                    enqueue_mail.delay(mail_id=msg.id )
+#                else:
+#                    enqueue_mail(mail_obj=msg)
     except Exception,e:
         log.error( "enqueue_mails_for_publish():" +  str(e) )
         log.debug( traceback.format_exc().replace('\n','/') )
 
 @task
-def enqueue_mail(mail_id=None,mail_obj=None,async=True,):
-    mail_obj = mail_obj or Mail.objects.get(id = mail_id )
+def enqueue_mail(mail_id=None,mail_class=None,mail_obj=None,async=True,):
+    mail_obj= mail_obj if mail_obj != None else get_model(mail_class).objects.get(id=mail_id) 
 
     log = current_task.get_logger()
     log.debug('tasks.enqueue_mail %s %s' % (mail_id,mail_obj))
@@ -240,7 +247,7 @@ def enqueue_mail(mail_id=None,mail_obj=None,async=True,):
     else :
         #: sendmail later
         deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
-                                    eta=mail_obj.publish.dt_start )
+                                    eta=make_eta(mail_obj.publish.dt_start) )
 
 @task
 def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
@@ -264,8 +271,6 @@ def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
             )
         #:TODO: change the status
                   
-    except Mail.DoesNotExist ,e:
-        log.error("send_mail():No Message record for id=%s" % mail_id)
     except Exception,e:
         #: STMP error... ?
         log.error("send_mail(): %s" % str(e))
