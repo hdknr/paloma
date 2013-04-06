@@ -248,7 +248,7 @@ class Publish(models.Model):
     circles= models.ManyToManyField(Circle,verbose_name=u'Target Circles' )
     ''' Circle'''
 
-    task= models.CharField(u'Task ID',max_length=100 ,default=None,null=True,blank=True,)
+    task_id= models.CharField(u'Task ID',max_length=40,default=None,null=True,blank=True,)
     ''' Task ID  '''
 
     status= models.CharField(_(u"status"), max_length=24,db_index=True,
@@ -384,6 +384,9 @@ class Message(models.Model):
     status=models.CharField(u'Status',max_length=50,default=None,blank=True,null=True)
     ''' SMTP Status '''
 
+    task_id= models.CharField(u'Task ID',max_length=40,default=None,null=True,blank=True,)
+    ''' Task ID  '''
+
     created = models.DateTimeField(u'Created',auto_now_add=True)
     updated = models.DateTimeField(u'Updated',auto_now=True)
     smtped  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
@@ -398,7 +401,6 @@ class Message(models.Model):
         super(Message,self).__init__(*args,**kwargs)
         if self.template == None:
             self.template = Template.get_default_template()
-        self.render(do_save=False)  #:render without save.
 
     def __unicode__(self):
         try:

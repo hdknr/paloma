@@ -127,7 +127,7 @@ def call_task_by_name(mod_name,task_name,*args,**kwargs):
     """ call task by name """
     
     m = __import__(mod_name,globals(),locals(),["*"])
-    getattr(m,task_name).delay( *args,**kwargs)
+    return getattr(m,task_name).delay( *args,**kwargs)
 
 @task
 def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
@@ -193,9 +193,14 @@ def enqueue_publish(sender,publish_id=None,publish=None):
         q =  Publish.objects.filter(**args)
     
     for publish in q: 
-        enqueue_mails_for_publish.delay(sender,publish.id ) #: Asynchronized Call
+        t=enqueue_mails_for_publish.delay(sender,publish.id ) #: Asynchronized Call
         publish.status = "active"
+        publish.task_id = t.task_id
         publish.save()
+
+@task
+def test(msg):
+    print msg
 
 @task
 def enqueue_mails_for_publish(sender,publish_id,async=True):
@@ -212,22 +217,14 @@ def enqueue_mails_for_publish(sender,publish_id,async=True):
             for member in circle.member_set.exclude(user=None):
                 pub= Publication.objects.publish(publish,circle,member)
                 if async:
-                    enqueue_mail.delay(mail_id=pub.message.id)
+                    t=enqueue_mail.delay(mail_id=pub.message.id)
+                    pub.message.task_id = t.task_id
+                    pub.message.save()
                 else:
                     enqueue_mail(mail_obj=pub.message)
+                    pub.message.task_id = "EAGER"
+                    pub.message.save()
 
-#                msg,created= Mail.objects.get_or_create(
-#                                publish=publish,circle=circle,member=member ) #:re-use the same mail
-#
-#                if created==False:
-#                    msg.render()
-#                    msg.save()
-#
-#                #: TODO: Exclude  user == None or is_active ==False or forward == None
-#                if async:
-#                    enqueue_mail.delay(mail_id=msg.id )
-#                else:
-#                    enqueue_mail(mail_obj=msg)
     except Exception,e:
         log.error( "enqueue_mails_for_publish():" +  str(e) )
         log.debug( traceback.format_exc().replace('\n','/') )
@@ -244,10 +241,15 @@ def enqueue_mail(mail_id=None,mail_class=None,mail_obj=None,async=True,):
     if async==False or mail_obj.is_timeup:
         #: sendmail right now
         deliver_mail(mail_obj=mail_obj) 
+        mail_obj.task_id='EAGER' 
+        mail_obj.save()
+        
     else :
         #: sendmail later
-        deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
+        t= deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
                                     eta=make_eta(mail_obj.publish.dt_start) )
+        mail_obj.task_id = t.task_id
+        mail_obj.save()
 
 @task
 def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
