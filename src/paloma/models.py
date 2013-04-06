@@ -559,8 +559,8 @@ class PublicationManager(models.Manager):
                             circle=circle,
                             member=member,)[0] #:(object,created )
             )
-        if created ==False:
-            ret.render()
+        ret.render()
+        ret.save()
         return ret
 
 class Publication(models.Model):
@@ -582,7 +582,6 @@ class Publication(models.Model):
 #
     def __init_(self,*args,**kwargs):
         super(Publication,self).__init__(*args,**kwargs)
-        self.render()
 
     def context(self,**kwargs):
         ret =  self.message.context(**kwargs)
