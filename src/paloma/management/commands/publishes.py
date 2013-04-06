@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.template.loader import render_to_string
 from django.conf import settings 
 from django.contrib.auth.models import User 
-
+from django.utils.timezone import datetime
 
 from optparse import make_option
 from datetime import datetime
@@ -13,6 +13,7 @@ import os
 from . import GenericCommand
 from ...models import Site
 from ...tasks import enqueue_publish,enqueue_mails_for_publish
+from ...utils import make_eta
 
 class Command(GenericCommand):
     ''' paloma Publish controller
@@ -33,11 +34,23 @@ class Command(GenericCommand):
         '''　enqueue messages from Publish
 
         '''
+        eta_format='%y-%m-%d  %H:%M'
+
         if options['sync']:
             print "Enqueue mails of a publish",publish_id,"Synchronously"
             enqueue_mails_for_publish('manage', publish_id,False)
+
         elif options['eta']:
             print "Enqueue mails of a publish",publish_id,"Asynchronously for ",options['eta']
+            try:
+                task=enqueue_mails_for_publish.apply_async(
+                    ( 'manage',publish_id, ),
+                    eta=  make_eta( datetime.strptime( options['eta'],eta_format ) )
+                )
+                print task
+            except Exception,e:
+                print e, eta_format
+
         else:
             print "Enqueue mails of a publish",publish_id,"Asynchronously"
             enqueue_mails_for_publish.delay('manage',publish_id )

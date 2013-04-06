@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.mail import get_connection
-from django.utils.timezone import now
+from django.utils.timezone import datetime ,now
 from django.template import Template,Context
 from django.db.models.loading import get_model as django_get_model
 
@@ -19,7 +19,7 @@ from models import (
 )
 from mails import send_mail
 from actions import process_action
-from utils import class_path
+from utils import class_path,make_eta
 
 CONFIG = getattr(settings, 'PALOMA_EMAIL_TASK_CONFIG', {})
 
@@ -276,7 +276,8 @@ def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
 
 def do_enqueue_publish(publish):
     ''' helper te enqueue_publish '''
-    t = enqueue_schedule.apply_async(("admin",publish.id),{},eta=publish.dt_start)
+    t = enqueue_schedule.apply_async(("admin",publish.id),{},
+                eta= make_eta(publish.dt_start) )
     publish.task =t.id
     publish.save()
 

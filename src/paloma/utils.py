@@ -2,7 +2,7 @@
 
 from django.db.models.base import ModelBase
 from django.contrib.contenttypes.models import ContentType
-from django.utils.timezone import now
+from django.utils.timezone import now,get_current_timezone,make_aware
 from django.conf import settings
 
 import random ,os
@@ -11,6 +11,7 @@ from datetime import datetime ,timedelta
 
 expire = lambda : now() + timedelta(seconds = getattr(settings,'PALOMA_EXPIRE',120) ) 
 class_path = lambda obj: ".".join([obj.__class__.__module__,obj.__class__.__name__ ])
+make_eta = lambda dt: dt if dt.tzinfo else make_aware(dt,get_current_timezone() )
 
 def gen_random_string(length, chrs=None):
     ''' generate random string
