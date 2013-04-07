@@ -86,9 +86,26 @@ class Alias(models.Model):
 
 class AbstractProfile(models.Model):
     ''' Profile meta class'''
+
+    def target_context(self, member):
+        """ override this to return context dict for template rendering  """
+        raise NotImplementedError
+
+    @classmethod
+    def target(cls,obj,member):
+        context={}
+        for ref in obj._meta.get_all_related_objects():
+            if ref.model in cls.__subclasses__():
+                try:
+                    context.update( 
+                        getattr(obj,ref.var_name ).target_context(member) 
+                    )
+                except Exception,e:
+                    pass 
+        return context
+
     class Meta:
         abstract=True
-
 
 class Site(models.Model):
     ''' Site
@@ -179,6 +196,7 @@ class Circle(models.Model):
             #:Default Circle MUST has operators
             map(lambda o : self.operators.add(o),self.site.operators.all())
         
+
     class Meta:
         unique_together = ( ('site','name') ,
                             ('site','symbol'),
@@ -266,6 +284,7 @@ class Publish(models.Model):
     def get_context(self,circle,user):
         context = {}
         for ref in self._meta.get_all_related_objects():
+            print ref.model
             if ref.model in AbstractProfile.__subclasses__():
                 try:
                     context.update( 
@@ -583,9 +602,13 @@ class Publication(models.Model):
     def __init_(self,*args,**kwargs):
         super(Publication,self).__init__(*args,**kwargs)
 
+    
     def context(self,**kwargs):
         ret =  self.message.context(**kwargs)
         ret['publish']=self.publish
+        ret.update( 
+          AbstractProfile.target(self.message.circle,self.message.member ) 
+        )     #:targetting
         return  ret
 
     def render(self,**kwargs):
