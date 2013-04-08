@@ -9,6 +9,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
 from django.conf import settings
 from django import template # import Template,Context
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
 
 from email import message_from_string
 
@@ -92,13 +94,14 @@ class AbstractProfile(models.Model):
         raise NotImplementedError
 
     @classmethod
-    def target(cls,obj,member):
+    def target(cls,obj,*args,**kwargs):
         context={}
+        subclasses =  cls.__subclasses__()
         for ref in obj._meta.get_all_related_objects():
-            if ref.model in cls.__subclasses__():
+            if ref.model in subclasses:
                 try:
                     context.update( 
-                        getattr(obj,ref.var_name ).target_context(member) 
+                        getattr(obj,ref.var_name ).target_context(*args,**kwargs) 
                     )
                 except Exception,e:
                     pass 
@@ -106,6 +109,7 @@ class AbstractProfile(models.Model):
 
     class Meta:
         abstract=True
+
 
 class Site(models.Model):
     ''' Site
@@ -150,6 +154,63 @@ class Site(models.Model):
                     domain=getattr(settings,'PALOMA_DEFAULT_DOMAIN','example.com'),
                 )[0]
 
+class Template(models.Model):
+    ''' Site Notice Text '''
+
+    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    ''' Owner Site'''
+
+    name = models.CharField(u'Notice Name',max_length=20,db_index=True,)
+    ''' Notice Name'''
+
+    subject= models.CharField(u'Subject',max_length=100 ,default='',)
+    ''' Subject '''
+
+    text =  models.TextField(u'Text',max_length=100 ,default='',)
+    ''' Text '''
+
+    @classmethod
+    def get_default_template(cls,name='DEFAULT_TEMPLATE',site=None):
+        site = site or Site.app_site()
+        return Template.objects.get_or_create(site=site,name=name,)[0] 
+
+    def render(self,*args,**kwargs):
+        ''' 
+            :param kwargs: Context dictionary 
+        '''        
+        return tuple([template.Template(t).render(template.Context(kwargs)) 
+                for t in [self.subject,self.text] ])
+
+    def __unicode__(self):
+        return self.name
+ 
+    class Meta:
+        unique_together = ( ('site','name') ,)
+
+
+class Targetting(models.Model):
+    '''  '''
+    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    ''' Owner Site'''
+
+    targetter_content_type = models.ForeignKey(ContentType,related_name="targetter")
+    ''' targetter model class'''
+    targetter_object_id = models.PositiveIntegerField()
+    ''' tragetter object id '''
+    targetter = generic.GenericForeignKey('targetter_content_type', 'targetter_object_id')
+    ''' targgetter instance '''
+
+    mediator_content_type = models.ForeignKey(ContentType,related_name="mediator")
+    ''' mediator model class'''
+    mediator_object_id = models.PositiveIntegerField()
+    ''' mediator object id '''
+    mediator= generic.GenericForeignKey('mediator_content_type', 'mediator_object_id')
+    ''' mediator instance '''
+   
+    def __unicode__(self):
+        return self.targetter.__unicode__()
+    
+################################################################################
 class Circle(models.Model):
     ''' Circle 
     '''
@@ -278,6 +339,10 @@ class Publish(models.Model):
     forward_to= models.CharField(u'Forward address',max_length=100 ,default=None,null=True,blank=True)
     ''' Forward address for incomming email '''
 
+    targettings = generic.GenericRelation(Targetting,
+                    object_id_field="mediator_object_id",
+                    content_type_field="mediator_content_type")
+
     def __unicode__(self):
         return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.publisher.__unicode__())
 
@@ -339,39 +404,6 @@ except:
 
 
 ####################################################################################
-
-class Template(models.Model):
-    ''' Site Notice Text '''
-
-    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
-    ''' Owner Site'''
-
-    name = models.CharField(u'Notice Name',max_length=20,db_index=True,)
-    ''' Notice Name'''
-
-    subject= models.CharField(u'Subject',max_length=100 ,default='',)
-    ''' Subject '''
-
-    text =  models.TextField(u'Text',max_length=100 ,default='',)
-    ''' Text '''
-
-    @classmethod
-    def get_default_template(cls,name='DEFAULT_TEMPLATE',site=None):
-        site = site or Site.app_site()
-        return Template.objects.get_or_create(site=site,name=name,)[0] 
-
-    def render(self,*args,**kwargs):
-        ''' 
-            :param kwargs: Context dictionary 
-        '''        
-        return tuple([template.Template(t).render(template.Context(kwargs)) 
-                for t in [self.subject,self.text] ])
-
-    def __unicode__(self):
-        return self.name
- 
-    class Meta:
-        unique_together = ( ('site','name') ,)
 
 class Message(models.Model):
     ''' Message '''
@@ -593,22 +625,22 @@ class Publication(models.Model):
     ''' Message '''
 
     objects = PublicationManager()
-#    circle= models.ForeignKey(Circle,verbose_name=u'Target Circle', null=True,blank=True, )
-#    ''' Target Circle '''
-#
-#    member = models.ForeignKey(Member,verbose_name=u'Target Member' )
-#    ''' Target Mailbox'''
-#
-    def __init_(self,*args,**kwargs):
-        super(Publication,self).__init__(*args,**kwargs)
 
-    
     def context(self,**kwargs):
         ret =  self.message.context(**kwargs)
         ret['publish']=self.publish
+
+        #: Circle & Member Targetting
         ret.update( 
           AbstractProfile.target(self.message.circle,self.message.member ) 
-        )     #:targetting
+        )     
+
+        #:AdHoc Targetting
+        for t in self.publish.targettings.all():
+            try:
+                ret.update ( t.target( self ) )
+            except:
+                pass 
         return  ret
 
     def render(self,**kwargs):

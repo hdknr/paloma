@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*- 
 from django.contrib import admin
+from django.contrib.contenttypes import generic
 from django.conf import settings
 from django.utils.timezone import now
 
@@ -64,6 +65,17 @@ class SiteAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Site._meta.fields ])
 admin.site.register(Site,SiteAdmin)
 
+### Targetting 
+
+class TargettingInline(generic.GenericTabularInline):
+    model = Targetting
+    ct_field='mediator_content_type'
+    ct_fk_field='mediator_object_id'
+
+class TargettingAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Targetting._meta.fields ])
+admin.site.register(Targetting,TargettingAdmin)
+
 ### Circle 
 class CircleAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Circle._meta.fields ])
@@ -78,6 +90,9 @@ admin.site.register(Member,MemberAdmin)
 class PublishAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Publish._meta.fields ])
 
+    inlines = [
+        TargettingInline,
+    ]
     def save_model(self, request, obj, form, change):
         ''' Saving... 
 
