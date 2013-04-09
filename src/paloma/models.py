@@ -211,6 +211,15 @@ class Targetting(models.Model):
         return self.targetter.__unicode__()
     
 ################################################################################
+class CircleManager(models.Manager):
+    def find_for_domain(self,domain,symbol=None):
+        q= { 'site__domain' : domain } 
+        if symbol == None or symbol=='':
+            q['is_default'] = True 
+        else:
+            q['symbol'] = symbol
+        return self.get(**q)
+
 class Circle(models.Model):
     ''' Circle 
     '''
@@ -231,6 +240,8 @@ class Circle(models.Model):
     operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
     ''' Group Operators
     '''
+
+    objects = CircleManager()
 
     def __unicode__(self):
         return "%s of %s" % ( self.name,  self.site.__unicode__() )
