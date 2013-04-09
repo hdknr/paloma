@@ -237,9 +237,9 @@ class Circle(models.Model):
     is_default = models.BooleanField(default=False,)
     ''' Site's Default Circle or not '''
 
-    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
-    ''' Group Operators
-    '''
+#    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
+#    ''' Group Operators
+#    '''
 
     objects = CircleManager()
 
@@ -264,9 +264,11 @@ class Circle(models.Model):
 
         super(Circle,self).save(**kwargs)
 
-        if self.is_default and self.operators.count() <1 :
-            #:Default Circle MUST has operators
-            map(lambda o : self.operators.add(o),self.site.operators.all())
+        #TODO:  add site.operators  to  Circle's Membership(is_admin=True )
+
+#        if self.is_default and self.operators.count() <1 :
+#            #:Default Circle MUST has operators
+#            map(lambda o : self.operators.add(o),self.site.operators.all())
         
 
     class Meta:
@@ -292,7 +294,9 @@ class Member(models.Model):
     bounces = models.IntegerField(u'Bounce counts',default=0)
     ''' Bounce count'''
 
-    circles= models.ManyToManyField(Circle,verbose_name=u'Opt-in Group' )
+    circles= models.ManyToManyField(Circle,
+                through = 'Membership', 
+                verbose_name=u'Opt-in Circle' )
     ''' Opt-In Circles'''
 
     def __unicode__(self):
@@ -308,6 +312,15 @@ class Member(models.Model):
         self.user.is_active = active
         self.user.save()
         return newpass
+
+class Membership(models.Model):
+    member = models.ForeignKey(Member, verbose_name=u'Member' )
+    ''' Member '''
+    circle = models.ForeignKey(Circle, verbose_name=u'Circle' )
+    ''' Circle'''
+
+    is_admin = models.BooleanField(u'Is Admin',default=False)
+
 
 PUBLISH_STATUS=(
                     ('pending','pending'),

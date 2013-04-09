@@ -86,6 +86,11 @@ class MemberAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Member._meta.fields ])
 admin.site.register(Member,MemberAdmin)
 
+### Membership 
+class MembershipAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Membership._meta.fields ])
+admin.site.register(Membership,MembershipAdmin)
+
 ### Publish 
 class PublishAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Publish._meta.fields ])
