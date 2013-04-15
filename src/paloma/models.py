@@ -271,6 +271,8 @@ class Circle(models.Model):
 #        if self.is_default and self.operators.count() <1 :
 #            #:Default Circle MUST has operators
 #            map(lambda o : self.operators.add(o),self.site.operators.all())
+    def is_admin_user(self,user): 
+        return self.membership_set.filter(member__user = user, is_admin=True).exists()
         
     class Meta:
         unique_together = ( ('site','name') ,
