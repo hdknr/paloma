@@ -237,10 +237,12 @@ class Circle(models.Model):
     is_default = models.BooleanField(default=False,)
     ''' Site's Default Circle or not '''
 
+    is_moderated= models.BooleanField(default=True,)
+    ''' True: Only operators(Membership.is_admin True) can circulate their message.'''
+
 #    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
 #    ''' Group Operators
 #    '''
-
     objects = CircleManager()
 
     def __unicode__(self):
@@ -270,7 +272,6 @@ class Circle(models.Model):
 #            #:Default Circle MUST has operators
 #            map(lambda o : self.operators.add(o),self.site.operators.all())
         
-
     class Meta:
         unique_together = ( ('site','name') ,
                             ('site','symbol'),
