@@ -117,10 +117,11 @@ class Site(models.Model):
     name = models.CharField(u'Owner Site Name',max_length=100 ,db_index=True,unique=True)
     ''' Site Name '''
 
-    domain= models.CharField(u'@Domain',max_length=100 ,db_index=True,unique=True)
+    domain= models.CharField(u'@Domain',max_length=100 ,default='localhost',
+                        db_index=True,unique=True,null=False,blank=False,)
     ''' @Domain'''
 
-    url =  models.CharField(u'URL',max_length=150 ,db_index=True,unique=True,)
+    url =  models.CharField(u'URL',max_length=150 ,db_index=True,unique=True,default="/",)
     ''' URL path ''' 
 
     operators = models.ManyToManyField(User,verbose_name=u'Site Operators' )
