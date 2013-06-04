@@ -7,6 +7,7 @@ from optparse import make_option
 from datetime import datetime
 import commands
 import os
+import sys
 
 from . import GenericCommand
 from ...models import Domain
@@ -118,6 +119,7 @@ class Command(GenericCommand):
                 continue
             print m.group(1)
 
+
     def handle_makeconfig(self,*args,**options):
         ''' create postfix configration files : /etc/postfix
         '''
@@ -125,21 +127,29 @@ class Command(GenericCommand):
         
         for c in POSTFIX_VIRTUAL_MYSQL_CONF:
             #: Generate Virtual Configuration
-            print "providing:", os.path.join( context['VIRTUAL_MYSQL_PATH'], c)
-            conf_file = open( os.path.join( context['VIRTUAL_MYSQL_PATH'], c), "w")
+            path = os.path.join( context['VIRTUAL_MYSQL_PATH'], c)
+            print "\n"*3,"*" * (len(path)+20)
+            print "providing:",path 
+            print "*" * (len(path)+20) ,"\n" * 3
+            conf_file = sys.stdout if options['dryrun'] else  open( path, "w")
             conf_file.write(  
-                render_to_string("conf%s/mysql/%s" % (options['virtual-path'],c),context)
+                render_to_string("paloma/conf%s/mysql/%s" % (options['virtual-path'],c),context)
             )
-            conf_file.close()
+            if not options['dryrun']:
+                conf_file.close()
 
         for c in POSTFIX_CONF:
             #: Generate Virtual Configuration
+            path = os.path.join( context['POSTFIX_PATH'] , c)
+            print "\n"*3,"*" * (len(path)+20)
             print "Generating:",c
-            conf_file = open( os.path.join( context['POSTFIX_PATH'] , c), "w")
+            print "*" * (len(path)+20) ,"\n" * 3
+            conf_file = sys.stdout if options['dryrun'] else  open( path  , "w")
             conf_file.write(  
-                render_to_string("conf/%s/%s" % (options['postfix-path'],c),context)
+                render_to_string("paloma/conf/%s/%s" % (options['postfix-path'],c),context)
             )
-            conf_file.close()
+            if not options['dryrun']:
+                conf_file.close()
 
     def handle_print_transport(self,*args,**options):
         ''' print transport configuration for master.cf

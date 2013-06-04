@@ -46,11 +46,17 @@ class GenericCommand(BaseCommand):
             dest='eta',
             default=None,
             help=u'Estimated Time of Arrival'),
+
         make_option('--encoding',
             action='store',
             dest='encoding',
             default='utf-8',
             help=u'encoding'),
+
+        make_option('-d', '--dryrun', 
+            action='store_true',
+            dest='dryrun', default=False,
+            help=u'False(default): modify data on storages, True: print data to console out'),    
         )
     ''' Command Option '''
 
@@ -70,7 +76,7 @@ class GenericCommand(BaseCommand):
             m = re.search('^handle_(.*)$',i)
             if m == None:
                 continue
-            print m.group(1)
+            print "subcommand:",m.group(1)
         print args
         print options
 
@@ -78,6 +84,7 @@ class GenericCommand(BaseCommand):
         '''  command main '''
 
         if len(args) < 1 :
+            self.handle_help(*args,**options)
             return "a sub command must be specfied"
         self.command = args[0]
         getattr(self, 'handle_%s'% self.command ,GenericCommand.handle_help)(*args[1:],**options)
