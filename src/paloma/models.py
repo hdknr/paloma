@@ -273,6 +273,21 @@ class Circle(models.Model):
 #            map(lambda o : self.operators.add(o),self.site.operators.all())
     def is_admin_user(self,user): 
         return self.membership_set.filter(member__user = user, is_admin=True).exists()
+
+    def is_admin(self,user): 
+        return self.membership_set.filter(member__user = user, is_admin=True).exists()
+
+    def is_operator(self,user): 
+        return self.membership_set.filter(member__user = user, is_admin=True).exists()
+        
+    def is_member (self,user): 
+        return self.membership_set.filter(member__user = user ).exists()
+
+    def any_admin(self):
+        try:
+            return self.membership_set.filter(is_admin=True)[0].member.user
+        except:
+            return None    
         
     class Meta:
         unique_together = ( ('site','name') ,
