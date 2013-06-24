@@ -235,7 +235,7 @@ class Circle(models.Model):
                     )
     ''' Symbol '''
 
-    is_default = models.BooleanField(default=False,)
+    is_default = models.BooleanField(default=False,help_text=_('Is Default Circle'),)
     ''' Site's Default Circle or not '''
 
     is_moderated= models.BooleanField(default=True,)
@@ -284,6 +284,10 @@ class Circle(models.Model):
     def is_member (self,user): 
         return self.membership_set.filter(member__user = user ).exists()
 
+    def are_member(self,users):
+        ''' all users are member of this Circle '''
+        return all( map( lambda u : self.membership_set.filter(member__user = u).exists(),users ))
+
     def any_admin(self):
         try:
             return self.membership_set.filter(is_admin=True)[0].member.user
@@ -294,23 +298,25 @@ class Circle(models.Model):
         unique_together = ( ('site','name') ,
                             ('site','symbol'),
                         )
+        verbose_name = _(u'Circle')
+        verbose_name_plural = _(u'Circles')
 
 class Member(models.Model):
     ''' Member
 
         - a system user can have multiple personality
     '''
-    user= models.ForeignKey(User, verbose_name=u'System User' )
+    user= models.ForeignKey(User, verbose_name=_(u'System User') )
     ''' System User '''
 
-    address = models.CharField(u'Forward address',max_length=100 ,unique=True)
+    address = models.CharField(_(u'Forward address'),max_length=100 ,unique=True)
     ''' Email Address 
     '''
 
-    is_active = models.BooleanField(u'Actaive status',default=False )
+    is_active = models.BooleanField(_(u'Actaive status'),default=False )
     ''' Active Status '''
 
-    bounces = models.IntegerField(u'Bounce counts',default=0)
+    bounces = models.IntegerField(_(u'Bounce counts'),default=0)
     ''' Bounce count'''
 
     circles= models.ManyToManyField(Circle,
@@ -332,14 +338,27 @@ class Member(models.Model):
         self.user.save()
         return newpass
 
+    class Meta:
+        verbose_name = _(u'Member')
+        verbose_name_plural = _(u'Members')
+
 class Membership(models.Model):
-    member = models.ForeignKey(Member, verbose_name=u'Member' )
+    member = models.ForeignKey(Member, verbose_name=_(u'Member') )
     ''' Member '''
-    circle = models.ForeignKey(Circle, verbose_name=u'Circle' )
+    circle = models.ForeignKey(Circle, verbose_name=_(u'Circle') )
     ''' Circle'''
 
-    is_admin = models.BooleanField(u'Is Admin',default=False)
+    is_admin = models.BooleanField(_(u'Is Circle Admin'),default=False)
 
+    def __unicode__(self):
+        return  "%s -> %s(%s)" %( 
+                    self.member.__unicode__() if self.member else "N/A",
+                    self.circle.__unicode__() if self.circle else "N/A",
+                    _(u"Circle Admin") if self.is_admin else _(u"General Member"),)
+
+    class Meta:
+        verbose_name = _(u'Membership')
+        verbose_name_plural = _(u'Memberships')
 
 PUBLISH_STATUS=(
                     ('pending','pending'),
@@ -373,7 +392,7 @@ class Publish(models.Model):
     task_id= models.CharField(u'Task ID',max_length=40,default=None,null=True,blank=True,)
     ''' Task ID  '''
 
-    status= models.CharField(_(u"status"), max_length=24,db_index=True,
+    status= models.CharField(_(u"status"), max_length=24,db_index=True,help_text=_('Publish Status'),
                                 default="pending", choices=PUBLISH_STATUS) 
 
     dt_start =  models.DateTimeField(u'Start to send '  ,help_text=u'created datetime',default=now )
