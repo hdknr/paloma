@@ -42,12 +42,12 @@ InnoDB ? Lock down the transaction isolation level to COMMIT READ
     Checking for corrupt, not cleanly closed and upgrade needing tables..
 
 
-tools
---------
+django-json-field
+-------------------
 
-- mandb
+::
 
-    - ssh://hg@bitbucket.org/hdknr/mandb
+    pip install -e git+git://github.com/derek-schaefer/django-json-field.git#egg=json_field
 
 south
 ---------
