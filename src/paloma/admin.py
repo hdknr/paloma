@@ -3,11 +3,31 @@ from django.contrib import admin
 from django.contrib.contenttypes import generic
 from django.conf import settings
 from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _
 
 from celery import app
 
 from models import *
 from tasks import apply_publish
+
+
+def link_to_relation(self,obj,field=""):
+    ''' relation field link '''
+    if obj == None:
+        return ""
+
+    fobj=getattr(obj,field,None) 
+    if fobj:
+        url = reverse( "admin:%s_change" % fobj._meta.db_table,
+                args=[ fobj.id ] ) 
+        return '<a href="%s">%s</a>' % (url,
+                fobj.__unicode__() )
+            
+user_link =  lambda self,obj : link_to_relation(self,obj,"user" )
+user_link.short_description = _(u"System User")
+user_link.allow_tags = True
+
+###
 
 if settings.DEBUG:
     try:
@@ -81,15 +101,21 @@ class CircleAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Circle._meta.fields ])
 admin.site.register(Circle,CircleAdmin)
 
+### Membership 
+#class MembershipAdmin(admin.ModelAdmin):
+#    list_display=tuple([f.name for f in Membership._meta.fields ])
+#admin.site.register(Membership,MembershipAdmin)
+#
+class MembershipInline(admin.StackedInline):
+    model=Membership
+    extra = 0
+#
 ### Member 
 class MemberAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Member._meta.fields ])
+    list_display=('id','user_link','address','is_active','bounces',)
+    inlines = [MembershipInline,]
+MemberAdmin.user_link = user_link
 admin.site.register(Member,MemberAdmin)
-
-### Membership 
-class MembershipAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Membership._meta.fields ])
-admin.site.register(Membership,MembershipAdmin)
 
 ### Publish 
 class PublishAdmin(admin.ModelAdmin):
