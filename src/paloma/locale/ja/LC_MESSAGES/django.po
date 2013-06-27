@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-06-11 17:16+0900\n"
+"POT-Creation-Date: 2013-06-27 14:38+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: admin.py:27 models.py:305
+#: admin.py:27 models.py:309
 msgid "System User"
 msgstr "システムユーザー"
 
@@ -54,58 +54,102 @@ msgstr "同じパスワードを指定してください"
 msgid "Is Default Circle"
 msgstr "デフォルトのサークルです。デフォルトのサークルは１つだけです。"
 
-#: models.py:297 models.py:344
+#: models.py:301 models.py:348 models.py:591
 msgid "Circle"
 msgstr "サークル"
 
-#: models.py:298
+#: models.py:302
 msgid "Circles"
 msgstr "サークル"
 
-#: models.py:308
+#: models.py:312
 msgid "Forward address"
 msgstr "転送先"
 
-#: models.py:312
+#: models.py:316
 msgid "Actaive status"
 msgstr "状態"
 
-#: models.py:315
+#: models.py:319
 msgid "Bounce counts"
 msgstr "バウンス数"
 
-#: models.py:338 models.py:342
+#: models.py:342 models.py:346 models.py:582
 msgid "Member"
 msgstr "登録アドレス"
 
-#: models.py:339
+#: models.py:343
 msgid "Members"
 msgstr "登録アドレス"
 
-#: models.py:347
+#: models.py:351
 msgid "Is Circle Admin"
 msgstr "サークルの管理者"
 
-#: models.py:353
+#: models.py:357
 msgid "Circle Admin"
 msgstr "管理者"
 
-#: models.py:353
+#: models.py:357
 msgid "General Member"
 msgstr "会員"
 
-#: models.py:356
+#: models.py:360
 msgid "Membership"
 msgstr "サークル会員"
 
-#: models.py:357
+#: models.py:361
 msgid "Memberships"
 msgstr "サークル会員"
 
-#: models.py:391 models.py:583
+#: models.py:395
 msgid "status"
 msgstr "状態"
 
-#: models.py:391
+#: models.py:395
 msgid "Publish Status"
 msgstr "それぞれのメンバーへのメールの送信状態"
+
+#: models.py:587
+msgid "Provision Status"
+msgstr "アカウント管理状態"
+
+#: models.py:596
+msgid "Inviter"
+msgstr "紹介者"
+
+#: models.py:601
+msgid "Provision Prospect"
+msgstr "登録予定アドレス"
+
+#: models.py:604
+msgid "Provision Secret"
+msgstr "パスワード"
+
+#: models.py:607
+msgid "Provision Short Secret"
+msgstr "ショートパスワード"
+
+#: models.py:612
+msgid "URL for Notice"
+msgstr "通知URL"
+
+#: models.py:615
+msgid "Provision Secret Expired"
+msgstr "パスワード有効期限"
+
+#: models.py:620
+msgid "Provision Try Datetime"
+msgstr "試行日時"
+
+#: models.py:625
+msgid "Commit Datetime"
+msgstr "管理確認日時"
+
+#: models.py:664
+msgid "Provision"
+msgstr "アカウント管理"
+
+#: models.py:665
+msgid "Provisions"
+msgstr "アカウント管理"

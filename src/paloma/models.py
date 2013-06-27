@@ -161,7 +161,7 @@ class Template(models.Model):
     site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
     ''' Owner Site'''
 
-    name = models.CharField(u'Notice Name',max_length=20,db_index=True,)
+    name = models.CharField(u'Notice Name',max_length=100,db_index=True,)
     ''' Notice Name'''
 
     subject= models.CharField(u'Subject',max_length=100 ,default='',)
@@ -579,50 +579,50 @@ class Provision(models.Model):
     ''' Account Provision management 
     '''
 
-    member= models.OneToOneField(Member,verbose_name=u'Member' 
-                    ,on_delete =models.SET_NULL
+    member= models.OneToOneField(Member,verbose_name=_(u'Member'),
+                    on_delete =models.SET_NULL
                     ,null=True,default=None,blank=True)
     ''' Member'''
 
-    status = models.CharField(_(u"status"), 
+    status = models.CharField(_(u"Provision Status"), 
                             max_length=24,db_index=True,)
     ''' Provisioning  Status'''
 
-    circle = models.ForeignKey(Circle,verbose_name=u'Circle' 
-                    ,null=True,default=None,blank=True,
+    circle = models.ForeignKey(Circle,verbose_name=_(u'Circle'),
+                    null=True,default=None,blank=True,
                     on_delete=models.SET_NULL)
     ''' Circle'''
 
-    inviter= models.ForeignKey(User,verbose_name=u'Invite' 
-                    ,null=True,default=None,blank=True,
+    inviter= models.ForeignKey(User,verbose_name=_(u'Inviter'),
+                    null=True,default=None,blank=True,
                     on_delete=models.SET_NULL)
     ''' Inviter'''
 
-    prospect = models.CharField(u'Prospect',max_length=100,default=None,null=True,blank=True)
+    prospect = models.CharField(_(u'Provision Prospect'),max_length=100,default=None,null=True,blank=True)
     ''' Prospect Email Address'''
 
-    secret= models.CharField(u'Secret',max_length=100,default=create_auto_secret,unique=True)
+    secret= models.CharField(_(u'Provision Secret'),max_length=100,default=create_auto_secret,unique=True)
     ''' Secret
     '''
-    short_secret= models.CharField(u'Short Secret',max_length=10,default=create_auto_short_secret,
+    short_secret= models.CharField(_(u'Provision Short Secret'),max_length=10,default=create_auto_short_secret,
                 unique=True)
     ''' Short Secret
     '''
 
-    url = models.CharField(u'URL for notice',max_length=200,default=None,null=True,blank=True)
+    url = models.CharField(_(u'URL for Notice'),max_length=200,default=None,null=True,blank=True)
     ''' URL for notice '''
 
-    dt_expire =   models.DateTimeField(u'Secrete Expired'  ,
+    dt_expire =   models.DateTimeField(_(u'Provision Secret Expired')  ,
                                 null=True, blank=True, default=expire,
                                 help_text=u'Secrete Expired', )
     ''' Secrete Expired'''
 
-    dt_try=  models.DateTimeField(u'Try Datetime'  ,
+    dt_try=  models.DateTimeField(_(u'Provision Try Datetime')  ,
                                 null=True, blank=True, default=None,
                                 help_text=u'Try Datetime', )
     ''' Try Datetime'''
 
-    dt_commit=  models.DateTimeField(u'Commit Datetime'  ,
+    dt_commit=  models.DateTimeField(_(u'Commit Datetime')  ,
                                 null=True, blank=True, default=None,
                                 help_text=u'Commit Datetime', )
     ''' Commit Datetime'''
@@ -660,6 +660,9 @@ class Provision(models.Model):
         if save:
             self.save()
 
+    class Meta:
+        verbose_name = _('Provision')
+        verbose_name_plural = _('Provisions')
 
 class PublicationManager(models.Manager):
     def publish(self,publish,circle,member):

@@ -11,6 +11,7 @@ Paloma bouncer:
 '''
 if __name__ == '__main__':
     import sys,os
+    import traceback
     if len(sys.argv) < 2:
         sys.stderr.write('you need path of your django application')
         sys.exit(1) 
@@ -35,4 +36,8 @@ if __name__ == '__main__':
     
     import settings
     
-    execute_manager(settings)
+    try:
+        print "Executing...", settings.__file__,sys.argv
+        execute_manager(settings)
+    except:
+        print traceback.format_exc() 
