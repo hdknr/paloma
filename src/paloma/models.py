@@ -478,7 +478,7 @@ class Message(models.Model):
     ''' Message Template '''
 
     member =  models.ForeignKey(Member,verbose_name=u'Member',
-                    null=True,default=None,on_delete=models.SET_NULL )
+                    null=True,default=None,blank=True,on_delete=models.SET_NULL )
     ''' Recipient Member (member.circle is Sender)'''
 
     circle=  models.ForeignKey(Circle,verbose_name=u'Circle',
@@ -659,6 +659,38 @@ class Provision(models.Model):
         self.dt_expire = expire()
         if save:
             self.save()
+
+    def send_response(self):
+        '''  send response mail
+        '''
+        from paloma.tasks import enqueue_mail
+
+        template,created =  self.circle.site.template_set.get_or_create(name="provision_%s" % self.status) 
+        if created:
+            template.subject = "Response for %s" % self.status
+            template.text = """
+URL :
+    {{ provision.url  }} 
+
+Long Password :
+    {{ provision.secret }}
+    
+Short Password:
+    {{ provision.short_secret}}}
+"""
+            template.save()
+    
+        mail ,created= Message.objects.get_or_create(
+                                mail_message_id = u"%s-up-%d@%s" % (self.circle.symbol,
+                                                                    self.id,
+                                                                    self.circle.site.domain),
+                                template= template,
+                                circle=self.circle,
+                                recipient = ( self.member and self.member.address ) or self.prospect  )
+        mail.set_status()
+        mail.render(provision = self)
+    
+        enqueue_mail(mail_obj=mail)
 
     class Meta:
         verbose_name = _('Provision')
