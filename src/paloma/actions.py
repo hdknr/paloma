@@ -33,6 +33,7 @@ def action(pattern,*dargs,**dkwargs):
                 kwargs.update( re.search(pattern,recipient).groupdict() )
             except Exception,e:
                 log.debug('action execute:' + str(e))
+                return False
             #:call action function
             result=func(sender,recipient,journal,*args, **kwargs)
             return result
@@ -46,11 +47,13 @@ def process_action(sender,recipient ,journal):
 
         - moduls specifind PALOMA_ACTIONS in settings.py
     '''
+    processed = False #:default not processed
     for actions in getattr(settings,'PALOMA_ACTIONS',[]):
         try:
-            ret =any(  getattr(v,'func_dict',{}).get('action',False) == True and v(sender,recipient,journal)
+            processed = any(  getattr(v,'func_dict',{}).get('action',False) == True and v(sender,recipient,journal)
                         for k,v in __import__(actions,{},{},['*'] ).__dict__.items() )
         except Exception,e:
             log.debug('process_action:'+str(e) )
             log.debug( str(e) +  traceback.format_exc().replace('\n','/') )
-
+    #: return action status( True : processed )
+    return processed

@@ -164,7 +164,6 @@ def process_journal(journal_id=None,*args,**kwargs):
         log.debug( traceback.format_exc().replace('\n','/') )
         return
 
-    print journal
     if journal.is_jailed == True:
         return
 
@@ -174,7 +173,9 @@ def process_journal(journal_id=None,*args,**kwargs):
         return  
 
     #: actions
-    process_action(journal.sender, journal.recipient,journal)
+    if not process_action(journal.sender, journal.recipient,journal) :
+        log.debug("deleting this journal")
+        journal.delete()        #: delete ?????
         
 @task
 def enqueue_publish(sender,publish_id=None,publish=None):
