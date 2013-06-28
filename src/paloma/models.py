@@ -133,7 +133,6 @@ class Site(models.Model):
 
     @property
     def default_circle(self):
-
         try:
             return self.circle_set.get(is_default=True,)   
         except:
@@ -210,7 +209,7 @@ class Targetting(models.Model):
    
     def __unicode__(self):
         return self.targetter.__unicode__()
-    
+
 ################################################################################
 class CircleManager(models.Manager):
     def find_for_domain(self,domain,symbol=None):
@@ -648,7 +647,8 @@ class Provision(models.Model):
         self.member.is_active = is_active
         self.member.save()
         if self.circle:
-            self.member.circles.add( self.circle )
+            membershop,created = Membership.objects.get_or_create(
+                            circle = self.circle, member = self.member )
         self.dt_commit = now()
         self.save()
 
