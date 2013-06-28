@@ -66,3 +66,13 @@ First time syncdb without "south".
     Creating table djcelery_workerstate
     Creating table djcelery_taskstate
     
+
+celery_workman
+----------------
+
+- https://github.com/harajuku-tech/celery_workman
+- To make django celery running easily.
+
+::
+    
+    $ pip install -e git+https://github.com/harajuku-tech/celery_workman.git#egg=celery_workman
