@@ -337,6 +337,10 @@ class Member(models.Model):
         self.user.save()
         return newpass
 
+    def get_absolute_url(self):
+        ''' Django API '''
+        return self.user.get_absolute_url() if self.user else None
+
     class Meta:
         verbose_name = _(u'Member')
         verbose_name_plural = _(u'Members')
