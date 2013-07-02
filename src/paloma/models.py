@@ -411,7 +411,10 @@ class Publish(models.Model):
                     content_type_field="mediator_content_type")
 
     def __unicode__(self):
-        return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.publisher.__unicode__())
+        if self.dt_start:
+            return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.publisher.__unicode__())
+        else:
+            return self.subject + "(now)"
 
     def get_context(self,circle,user):
         context = {}

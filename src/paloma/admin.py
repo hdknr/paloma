@@ -134,7 +134,9 @@ class PublishAdmin(admin.ModelAdmin):
         ''' 
         if all(['status' in form.changed_data,
                obj.status == 'scheduled',
-               obj.dt_start < now() or  ( obj.task != None and obj.task !="") ]):
+               any([obj.dt_start == None ,obj.dt_start and obj.dt_start < now() ,
+                    obj.task_id not in [None ,""], ]), 
+            ]):
             #: do nothing
             return 
 

@@ -283,10 +283,15 @@ def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
         #   - change status of Message
 
 def do_enqueue_publish(publish):
-    ''' helper te enqueue_publish '''
-    t = enqueue_schedule.apply_async(("admin",publish.id),{},
-                eta= make_eta(publish.dt_start) )
-    publish.task =t.id
+    ''' helper te enqueue_publish 
+    '''
+    if publish.dt_start:
+        t = enqueue_publish.apply_async(("admin",publish.id),{},
+                eta= make_eta(publish.dt_start) ) 
+    else:
+        t = enqueue_publish.apply_async(("admin",publish.id),{}, )
+
+    publish.task_id =t.id
     publish.save()
 
 def do_cancel_publish(publish):
