@@ -374,37 +374,39 @@ PUBLISH_STATUS=(
 class Publish(models.Model):
     ''' Message Delivery Publish'''
 
-    site = models.ForeignKey(Site,verbose_name=u'Site', )
+    site = models.ForeignKey(Site,verbose_name=_(u'Site'), )
     ''' Site '''
 
-    publisher = models.ForeignKey(User, verbose_name=u'Publisher' )
+    publisher = models.ForeignKey(User, verbose_name=_(u'Publisher') )
     ''' publisher '''
 
     messages= models.ManyToManyField('Message',through="Publication",
+                                        verbose_name =_("Messages"),
                                         related_name="message_set",)
 
-    subject= models.CharField(u'Subject',max_length=101 ,)
+    subject= models.CharField(_(u'Subject'),max_length=101 ,)
     ''' Subject '''
 
-    text =  models.TextField(u'Text',max_length=100 ,)
+    text =  models.TextField(_(u'Text'),max_length=100 ,)
     ''' Text '''
 
-    circles= models.ManyToManyField(Circle,verbose_name=u'Target Circles' )
+    circles= models.ManyToManyField(Circle,verbose_name=_(u'Target Circles') )
     ''' Circle'''
 
-    task_id= models.CharField(u'Task ID',max_length=40,default=None,null=True,blank=True,)
+    task_id= models.CharField(_(u'Task ID'),max_length=40,default=None,null=True,blank=True,)
     ''' Task ID  '''
 
-    status= models.CharField(_(u"status"), max_length=24,db_index=True,help_text=_('Publish Status'),
+    status= models.CharField(_(u"Publish Status"), max_length=24,db_index=True,help_text=_('Publish Status'),
                                 default="pending", choices=PUBLISH_STATUS) 
 
-    dt_start =  models.DateTimeField(u'Start to send '  ,help_text=u'created datetime',default=now )
+    dt_start =  models.DateTimeField(_(u'Time to Send')  ,help_text=u'created datetime',
+                            null=True,blank=True,default=now )
     ''' Stat datetime to send'''
 
-    forward_to= models.CharField(u'Forward address',max_length=100 ,default=None,null=True,blank=True)
+    forward_to= models.CharField(_(u'Forward address'),max_length=100 ,default=None,null=True,blank=True)
     ''' Forward address for incomming email '''
 
-    targettings = generic.GenericRelation(Targetting,
+    targettings = generic.GenericRelation(Targetting,verbose_name=_('Optional Targetting'),
                     object_id_field="mediator_object_id",
                     content_type_field="mediator_content_type")
 
@@ -414,7 +416,6 @@ class Publish(models.Model):
     def get_context(self,circle,user):
         context = {}
         for ref in self._meta.get_all_related_objects():
-            print ref.model
             if ref.model in AbstractProfile.__subclasses__():
                 try:
                     context.update( 
@@ -423,6 +424,11 @@ class Publish(models.Model):
                 except Exception,e:
                     pass 
         return context
+
+    class Meta:
+        verbose_name= _(u'Publish')
+        verbose_name_plural= _(u'Publish')
+
 
 ####
 class JournalManager(models.Manager):
