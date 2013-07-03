@@ -194,10 +194,12 @@ def enqueue_publish(sender,publish_id=None,publish=None,
         log.debug("specified Publish is = %s" % str(args))
         q =  Publish.objects.filter(**args)
     
-    for publish in q: 
+    print "publishes=",q
+    for publish in q:
         t=enqueue_mails_for_publish.delay(
             sender,publish.id ,member_filter,member_exclude) #: Asynchronized Call
         publish.status = "active"
+        publish.activated_at = now()
         publish.task_id = t.task_id
         publish.save()
 
@@ -257,6 +259,7 @@ def enqueue_mail(mail_id=None,mail_class="paloma.Message",mail_obj=None,async=Tr
             
         else :
             #: sendmail later
+            print "sending later......"
             t= deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
                                         eta=make_eta(mail_obj.publish.dt_start) )
             mail_obj.task_id = t.task_id
@@ -302,9 +305,10 @@ def do_enqueue_publish(publish, right_now=False,*args,**kwargs):
     ''' helper te enqueue_publish 
     '''
     task_args= ("admin",publish.id) + args
-    if right_now or publish.dt_start:
+    if right_now or publish.dt_start == None:
         t = enqueue_publish.apply_async( task_args,kwargs ,)
     else:
+        print  ">>>",publish.dt_start,make_eta(publish.dt_start) 
         t = enqueue_publish.apply_async( task_args,kwargs ,
                 eta= make_eta(publish.dt_start) ) 
 
@@ -313,8 +317,8 @@ def do_enqueue_publish(publish, right_now=False,*args,**kwargs):
 
 def do_cancel_publish(publish):
     ''' helper  cancel task'''
-    if publish.task != None:
-        app.current_app().control.revoke(publish.task)
+    if publish.task_id != None:
+        app.current_app().control.revoke(publish.task_id)
 
 def apply_publish(publish):
     ''' do something depend on status '''

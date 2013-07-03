@@ -142,11 +142,13 @@ admin.site.register(Member,MemberAdmin)
 
 ### Publish 
 class PublishAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Publish._meta.fields ])
+#    list_display=tuple([f.name for f in Publish._meta.fields ])
+    list_display=('id','site','publisher','subject','text','task_id','status','dt_start','activated_at',)
 
     inlines = [
         TargettingInline,
     ]
+    date_hierarchy = 'dt_start'
     def save_model(self, request, obj, form, change):
         ''' Saving... 
 

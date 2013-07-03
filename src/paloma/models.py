@@ -407,6 +407,10 @@ class Publish(models.Model):
                             null=True,blank=True,default=now )
     ''' Stat datetime to send'''
 
+    activated_at =  models.DateTimeField(_(u'Task Activated Time')  ,help_text=_(u'Task Activated Time Help'),
+                            null=True,blank=True,default=None)
+    ''' Task Activated Time '''
+
     forward_to= models.CharField(_(u'Forward address'),max_length=100 ,default=None,null=True,blank=True)
     ''' Forward address for incomming email '''
 
