@@ -436,6 +436,10 @@ class Publish(models.Model):
                     pass 
         return context
 
+    @property
+    def is_timeup(self):
+        return self.dt_start == None or self.dt_start <= now()
+
     class Meta:
         verbose_name= _(u'Publish')
         verbose_name_plural= _(u'Publish')
@@ -580,10 +584,6 @@ class Message(models.Model):
         return make_return_path( {"command" : "msg","message_id" : self.id,
                                   "domain": self.template.site.domain } )
 
-    @property
-    def is_timeup(self):
-        return  True    #:Always True
-
     def set_status(self,status=None,smtped=None,do_save=True):
         self.smtped = smtped
         self.status = status
@@ -719,12 +719,14 @@ Short Password:
 
 class PublicationManager(models.Manager):
 
-    def publish(self,publish,circle,member):
+    def publish(self,publish,circle,member,
+                    signature='pub'):
         assert all([publish,circle,member])
         ret,created = self.get_or_create(
                 publish = publish,
                 message = Message.objects.get_or_create(
-                            mail_message_id ="<pub-%d-%d-%d@%s>" %( publish.id,circle.id,member.id,circle.domain),
+                            mail_message_id ="<%s-%d-%d-%d@%s>" %( 
+                                    signature,publish.id,circle.id,member.id,circle.domain),
                             template =Template.get_default_template('PUBLICATION'),
                             circle=circle,
                             member=member,)[0] #:(object,created )

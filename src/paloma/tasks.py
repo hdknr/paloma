@@ -204,12 +204,9 @@ def enqueue_publish(sender,publish_id=None,publish=None,
         publish.save()
 
 @task
-def test(msg):
-    print msg
-
-@task
 def enqueue_mails_for_publish(sender,publish_id,
-            member_filter={}, member_exclude={},async=True):
+            member_filter={}, member_exclude={},
+                signature="pub",async=True):
     ''' Enqueu mails for speicifed Publish
 
         :param member_query: dict for query 
@@ -224,16 +221,15 @@ def enqueue_mails_for_publish(sender,publish_id,
         publish = Publish.objects.get(id = publish_id ) 
         for circle in publish.circles.all():
             for member in circle.member_set.filter(**member_filter).exclude( **member_exclude ):
-                pub= Publication.objects.publish(publish,circle,member)
+                pub= Publication.objects.publish(publish,circle,member,signature)
                 assert pub.message != None
                 if async:
                     t=enqueue_mail.delay(mail_id=pub.message.id)
-                    pub.message.task_id = t.task_id
-                    pub.message.save()
                 else:
-                    enqueue_mail(mail_obj=pub.message)
-                    pub.message.task_id = "EAGER"
-                    pub.message.save()
+                    t=enqueue_mail.apply((),{'mail_obj':pub.message})
+
+                pub.message.task_id = t.id
+                pub.message.save()
 
     except Exception,e:
         log.error( "enqueue_mails_for_publish():" +  str(e) )
@@ -251,26 +247,26 @@ def enqueue_mail(mail_id=None,mail_class="paloma.Message",mail_obj=None,async=Tr
     current_time = now()
 
     try:
-        if async==False or mail_obj.is_timeup:
+        if any([
+            current_task.request.is_eager == False , #: This task is async, so sending mail synchronously.
+            async==False ,
+               ]):
             #: sendmail right now
-            deliver_mail(mail_obj=mail_obj) 
-            mail_obj.task_id='EAGER' 
-            mail_obj.save()
-            
-        else :
-            #: sendmail later
-            print "sending later......"
-            t= deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
-                                        eta=make_eta(mail_obj.publish.dt_start) )
-            mail_obj.task_id = t.task_id
-            mail_obj.save()
+            t =deliver_mail.apply((),{'mail_obj':mail_obj}) 
+        else:
+            #: sendmail asynchronously now
+            t =deliver_mail.deley(mail_obj.id,str(mail_obj._meta))
+
+        mail_obj.task_id = t.task_id
+        mail_obj.save()
+
     except Exception,e:
         log.error("enqueue_mail(): %s" % str(e))
         log.debug( str(e) +"\n"+  traceback.format_exc().replace('\n','/') )
          
 
 @task
-def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
+def deliver_mail(mail_id=None,mail_class=None,mail_obj=None,*args,**kwargs):
     ''' send actual mail
         
     .. todo::
@@ -305,10 +301,9 @@ def do_enqueue_publish(publish, right_now=False,*args,**kwargs):
     ''' helper te enqueue_publish 
     '''
     task_args= ("admin",publish.id) + args
-    if right_now or publish.dt_start == None:
+    if right_now or publish.is_timeup:
         t = enqueue_publish.apply_async( task_args,kwargs ,)
     else:
-        print  ">>>",publish.dt_start,make_eta(publish.dt_start) 
         t = enqueue_publish.apply_async( task_args,kwargs ,
                 eta= make_eta(publish.dt_start) ) 
 
@@ -334,3 +329,12 @@ def smtp_status(sender,msg,**extended):
 #     model_class = get_model( *(extended.get('model_class','')+'.').split('.')[:2])
     model_class = get_model( extended.get('model_class',''))
     model_class and getattr(model_class,'update_status',lambda *x,**y:None)(msg,**extended)
+
+@task
+def test(msg="test",*args,**kwargs):
+    t=current_task
+    print "request=",t.request
+    print dir(t.request)
+    print "is_eager=",t.request.is_eager
+    print "id=",t.request.id
+    print msg, args,kwargs
