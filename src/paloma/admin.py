@@ -3,8 +3,7 @@ from django.contrib import admin
 from django.contrib.contenttypes import generic
 from django.conf import settings
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
-
+from django.utils.translation import ugettext_lazy as _ 
 from celery import app
 
 from models import *
@@ -12,7 +11,11 @@ from tasks import apply_publish
 
 
 def link_to_relation(self,obj,field=""):
-    ''' relation field link '''
+    ''' relation field link 
+        - self : Admin
+        - obj  : Model Instance
+        - filed : Field Name
+    '''
     if obj == None:
         return ""
 
@@ -26,6 +29,22 @@ def link_to_relation(self,obj,field=""):
 user_link =  lambda self,obj : link_to_relation(self,obj,"user" )
 user_link.short_description = _(u"System User")
 user_link.allow_tags = True
+
+member_link =  lambda self,obj : link_to_relation(self,obj,"member" )
+member_link.short_description = _(u"Member")
+member_link.allow_tags = True
+
+circle_link =  lambda self,obj : link_to_relation(self,obj,"circle" )
+circle_link.short_description = _(u"Circle")
+circle_link.allow_tags = True
+
+publish_link =  lambda self,obj : link_to_relation(self,obj,"publish" )
+publish_link.short_description = _(u"Publish")
+publish_link.allow_tags = True
+
+message_link =  lambda self,obj : link_to_relation(self,obj,"message" )
+message_link.short_description = _(u"Message")
+message_link.allow_tags = True
 
 ###
 
@@ -101,10 +120,14 @@ class CircleAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Circle._meta.fields ])
 admin.site.register(Circle,CircleAdmin)
 
-### Membership 
-#class MembershipAdmin(admin.ModelAdmin):
-#    list_display=tuple([f.name for f in Membership._meta.fields ])
-#admin.site.register(Membership,MembershipAdmin)
+## Membership 
+class MembershipAdmin(admin.ModelAdmin):
+    list_display=('id','circle_link','member_link','is_admin',)
+    list_filter=('circle','is_admin',)
+MembershipAdmin.member_link = member_link
+MembershipAdmin.circle_link = circle_link
+admin.site.register(Membership,MembershipAdmin)
+
 #
 class MembershipInline(admin.StackedInline):
     model=Membership
@@ -134,7 +157,7 @@ class PublishAdmin(admin.ModelAdmin):
         ''' 
         if all(['status' in form.changed_data,
                obj.status == 'scheduled',
-               any([obj.dt_start == None ,obj.dt_start and obj.dt_start < now() ,
+               any([obj.dt_start and obj.dt_start < now() ,
                     obj.task_id not in [None ,""], ]), 
             ]):
             #: do nothing
@@ -170,7 +193,16 @@ admin.site.register(Message,MessageAdmin)
 
 ### Publication
 class PublicationAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Publication._meta.fields ])
+    list_display=('id','publish_link','message_link','message_created')
+    list_filter=('publish',)
+
+PublicationAdmin.publish_link = publish_link
+PublicationAdmin.message_link = message_link
+message_created = lambda self,obj: obj.message.created
+message_created.short_description = _(u"Created At")
+message_created.allow_tags = True
+PublicationAdmin.message_created = message_created
+
 admin.site.register(Publication,PublicationAdmin)
 
 #################

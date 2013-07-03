@@ -359,6 +359,10 @@ class Membership(models.Model):
                     self.circle.__unicode__() if self.circle else "N/A",
                     _(u"Circle Admin") if self.is_admin else _(u"General Member"),)
 
+    def get_absolute_url(self):
+        ''' Django API '''
+        return self.member.user.get_absolute_url() if self.member and self.member.user else None
+
     class Meta:
         verbose_name = _(u'Membership')
         verbose_name_plural = _(u'Memberships')
@@ -512,9 +516,9 @@ class Message(models.Model):
     task_id= models.CharField(u'Task ID',max_length=40,default=None,null=True,blank=True,)
     ''' Task ID  '''
 
-    created = models.DateTimeField(u'Created',auto_now_add=True)
-    updated = models.DateTimeField(u'Updated',auto_now=True)
-    smtped  = models.DateTimeField(u'SMTP Time',default=None,blank=True,null=True)
+    created = models.DateTimeField(_(u'Created'),auto_now_add=True)
+    updated = models.DateTimeField(_(u'Updated'),auto_now=True)
+    smtped  = models.DateTimeField(_(u'SMTP Time'),default=None,blank=True,null=True)
 
     parameters = JSONField(blank=True, null=True, evaluate_formfield=True,)        #: dict
     ''' extra parameters '''
@@ -710,6 +714,7 @@ Short Password:
         verbose_name_plural = _('Provisions')
 
 class PublicationManager(models.Manager):
+
     def publish(self,publish,circle,member):
         assert all([publish,circle,member])
         ret,created = self.get_or_create(
@@ -728,10 +733,10 @@ class Publication(models.Model):
     ''' Each Published Item
 
     '''
-    publish = models.ForeignKey(Publish,verbose_name=u'Mail Schedule' )
+    publish = models.ForeignKey(Publish,verbose_name=_(u'Publish') )
     ''' Mail Schedule'''
 
-    message = models.ForeignKey(Message,verbose_name=u'Mail Message' )
+    message = models.ForeignKey(Message,verbose_name=_(u'Mail Message') )
     ''' Message '''
 
     objects = PublicationManager()

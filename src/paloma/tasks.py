@@ -178,7 +178,8 @@ def process_journal(journal_id=None,*args,**kwargs):
         journal.delete()        #: delete ?????
         
 @task
-def enqueue_publish(sender,publish_id=None,publish=None):
+def enqueue_publish(sender,publish_id=None,publish=None,
+        member_filter={},member_exclude={}):
     ''' enqueue specifid mail publish, or all publish
 
         - id : Publish identfier
@@ -194,7 +195,8 @@ def enqueue_publish(sender,publish_id=None,publish=None):
         q =  Publish.objects.filter(**args)
     
     for publish in q: 
-        t=enqueue_mails_for_publish.delay(sender,publish.id ) #: Asynchronized Call
+        t=enqueue_mails_for_publish.delay(
+            sender,publish.id ,member_filter,member_exclude) #: Asynchronized Call
         publish.status = "active"
         publish.task_id = t.task_id
         publish.save()
@@ -204,19 +206,24 @@ def test(msg):
     print msg
 
 @task
-def enqueue_mails_for_publish(sender,publish_id,async=True):
+def enqueue_mails_for_publish(sender,publish_id,
+            member_filter={}, member_exclude={},async=True):
     ''' Enqueu mails for speicifed Publish
+
+        :param member_query: dict for query 
 
     .. todo::
         - Custum QuerSet fiilter to targetting user.
         - If called asynchronosly, enqueue_mail should be called synchronosly.
     '''
     log = current_task.get_logger()
+    member_exclude.update( {'user':None } )
     try:   
         publish = Publish.objects.get(id = publish_id ) 
         for circle in publish.circles.all():
-            for member in circle.member_set.exclude(user=None):
+            for member in circle.member_set.filter(**member_filter).exclude( **member_exclude ):
                 pub= Publication.objects.publish(publish,circle,member)
+                assert pub.message != None
                 if async:
                     t=enqueue_mail.delay(mail_id=pub.message.id)
                     pub.message.task_id = t.task_id
@@ -231,26 +238,33 @@ def enqueue_mails_for_publish(sender,publish_id,async=True):
         log.debug( traceback.format_exc().replace('\n','/') )
 
 @task
-def enqueue_mail(mail_id=None,mail_class=None,mail_obj=None,async=True,):
-    mail_obj= mail_obj if mail_obj != None else get_model(mail_class).objects.get(id=mail_id) 
+def enqueue_mail(mail_id=None,mail_class="paloma.Message",mail_obj=None,async=True,):
+    ''' Enqueue a Meail
+    '''
+    mail_obj= mail_obj or get_model(mail_class).objects.get(id=mail_id) 
 
     log = current_task.get_logger()
     log.debug('tasks.enqueue_mail %s %s' % (mail_id,mail_obj))
 
     current_time = now()
 
-    if async==False or mail_obj.is_timeup:
-        #: sendmail right now
-        deliver_mail(mail_obj=mail_obj) 
-        mail_obj.task_id='EAGER' 
-        mail_obj.save()
-        
-    else :
-        #: sendmail later
-        t= deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
-                                    eta=make_eta(mail_obj.publish.dt_start) )
-        mail_obj.task_id = t.task_id
-        mail_obj.save()
+    try:
+        if async==False or mail_obj.is_timeup:
+            #: sendmail right now
+            deliver_mail(mail_obj=mail_obj) 
+            mail_obj.task_id='EAGER' 
+            mail_obj.save()
+            
+        else :
+            #: sendmail later
+            t= deliver_mail.apply_async([mail_obj.id,str(mail_obj._meta)], 
+                                        eta=make_eta(mail_obj.publish.dt_start) )
+            mail_obj.task_id = t.task_id
+            mail_obj.save()
+    except Exception,e:
+        log.error("enqueue_mail(): %s" % str(e))
+        log.debug( str(e) +"\n"+  traceback.format_exc().replace('\n','/') )
+         
 
 @task
 def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
@@ -282,14 +296,17 @@ def deliver_mail(mail_id=None,mail_class=None,mail_obj=None):
         #   - error mail to Message
         #   - change status of Message
 
-def do_enqueue_publish(publish):
+###############
+
+def do_enqueue_publish(publish, right_now=False,*args,**kwargs):
     ''' helper te enqueue_publish 
     '''
-    if publish.dt_start:
-        t = enqueue_publish.apply_async(("admin",publish.id),{},
-                eta= make_eta(publish.dt_start) ) 
+    task_args= ("admin",publish.id) + args
+    if right_now or publish.dt_start:
+        t = enqueue_publish.apply_async( task_args,kwargs ,)
     else:
-        t = enqueue_publish.apply_async(("admin",publish.id),{}, )
+        t = enqueue_publish.apply_async( task_args,kwargs ,
+                eta= make_eta(publish.dt_start) ) 
 
     publish.task_id =t.id
     publish.save()
