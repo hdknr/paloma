@@ -400,10 +400,11 @@ class Publish(models.Model):
     task_id= models.CharField(_(u'Task ID'),max_length=40,default=None,null=True,blank=True,)
     ''' Task ID  '''
 
-    status= models.CharField(_(u"Publish Status"), max_length=24,db_index=True,help_text=_('Publish Status'),
+    status= models.CharField(_(u"Publish Status"), max_length=24,db_index=True,
+                                help_text=_('Publish Status Help'),
                                 default="pending", choices=PUBLISH_STATUS) 
 
-    dt_start =  models.DateTimeField(_(u'Time to Send')  ,help_text=u'created datetime',
+    dt_start =  models.DateTimeField(_(u'Time to Send')  ,help_text=_(u'Time to Send Help'),
                             null=True,blank=True,default=now )
     ''' Stat datetime to send'''
 

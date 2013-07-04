@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-07-03 17:45+0900\n"
+"POT-Creation-Date: 2013-07-04 10:23+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,15 +22,15 @@ msgstr ""
 msgid "System User"
 msgstr "システムユーザー"
 
-#: admin.py:34 models.py:345 models.py:349 models.py:602
+#: admin.py:34 models.py:345 models.py:349 models.py:603
 msgid "Member"
 msgstr "登録アドレス"
 
-#: admin.py:38 models.py:300 models.py:351 models.py:611
+#: admin.py:38 models.py:300 models.py:351 models.py:612
 msgid "Circle"
 msgstr "サークル"
 
-#: admin.py:42 models.py:440 models.py:441 models.py:740
+#: admin.py:42 models.py:445 models.py:446 models.py:743
 msgid "Publish"
 msgstr "メール送信スケジュール"
 
@@ -38,7 +38,7 @@ msgstr "メール送信スケジュール"
 msgid "Message"
 msgstr "送信メール"
 
-#: admin.py:203
+#: admin.py:204
 msgid "Created At"
 msgstr "作成日時"
 
@@ -78,7 +78,7 @@ msgstr "デフォルトのサークルです。デフォルトのサークルは
 msgid "Circles"
 msgstr "サークル"
 
-#: models.py:311 models.py:414
+#: models.py:311 models.py:415
 msgid "Forward address"
 msgstr "転送先"
 
@@ -146,79 +146,87 @@ msgstr "バックグラウンドタスクID"
 msgid "Publish Status"
 msgstr "メールの送信状態"
 
-#: models.py:406
+#: models.py:404
+msgid "Publish Status Help"
+msgstr "送信状態をscheduledにすると、配信が予約されます。配信前(activeになる前)にcancelすると取消されます。"
+
+#: models.py:407
 msgid "Time to Send"
 msgstr "送信開始時刻"
 
-#: models.py:410
+#: models.py:407
+msgid "Time to Send Help"
+msgstr "メールの送信希望時刻を指定します。ブランクですとすぐに配信します。"
+
+#: models.py:411
 msgid "Task Activated Time"
 msgstr "タスク実行日時"
 
-#: models.py:410
+#: models.py:411
 msgid "Task Activated Time Help"
 msgstr "実際に実行された日時です"
 
-#: models.py:417
+#: models.py:418
 msgid "Optional Targetting"
 msgstr "追加ターゲティング"
 
-#: models.py:523
+#: models.py:528
 msgid "Created"
 msgstr "作成日時"
 
-#: models.py:524
+#: models.py:529
 msgid "Updated"
 msgstr "更新日時"
 
-#: models.py:525
+#: models.py:530
 msgid "SMTP Time"
 msgstr "SMTP送信日時"
 
-#: models.py:607
+#: models.py:608
 msgid "Provision Status"
 msgstr "アカウント管理状態"
 
-#: models.py:616
+#: models.py:617
 msgid "Inviter"
 msgstr "紹介者"
 
-#: models.py:621
+#: models.py:622
 msgid "Provision Prospect"
 msgstr "登録予定アドレス"
 
-#: models.py:624
+#: models.py:625
 msgid "Provision Secret"
 msgstr "パスワード"
 
-#: models.py:627
+#: models.py:628
 msgid "Provision Short Secret"
 msgstr "ショートパスワード"
 
-#: models.py:632
+#: models.py:633
 msgid "URL for Notice"
 msgstr "通知URL"
 
-#: models.py:635
+#: models.py:636
 msgid "Provision Secret Expired"
 msgstr "パスワード有効期限"
 
-#: models.py:640
+#: models.py:641
 msgid "Provision Try Datetime"
 msgstr "試行日時"
 
-#: models.py:645
+#: models.py:646
 msgid "Commit Datetime"
 msgstr "管理確認日時"
 
-#: models.py:717
+#: models.py:718
 msgid "Provision"
 msgstr "アカウント管理"
 
-#: models.py:718
+#: models.py:719
 msgid "Provisions"
 msgstr "アカウント管理"
 
-#: models.py:743
+#: models.py:746
 msgid "Mail Message"
 msgstr "送信メール"
 
