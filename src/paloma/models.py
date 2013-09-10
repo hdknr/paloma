@@ -220,6 +220,15 @@ class CircleManager(models.Manager):
             q['symbol'] = symbol
         return self.get(**q)
 
+    def of_user(self,user ):
+        return self.filter(membership__member__user = user)
+
+    def of_user_exclusive(self,user ):
+        return self.exclude(membership__member__user = user)
+
+    def of_admin(self,user ):
+        return self.filter(membership__member__user = user,membership__is_admin=True)
+
 class Circle(models.Model):
     ''' Circle 
     '''
