@@ -568,6 +568,13 @@ class Message(models.Model):
         return [ self.recipient ] if self.recipient else [ self.member.address ]
 
     def context(self,**kwargs):
+        '''  "text" and "subject" are rendered with this context
+
+            - member    : paloma.models.Member
+            - template  : paloma.models.Template
+            - kwargs    : extra parameters 
+            - [any]     : JSON serialized dict save in "parameters"
+        '''
         ret =  { "member" : self.member, "template": self.template,}
         ret.update(kwargs)
         if type(self.parameters) == dict:

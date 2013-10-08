@@ -194,6 +194,8 @@ admin.site.register(Template,TemplateAdmin)
 ### Message
 class MessageAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Message._meta.fields ])
+    date_hierarchy = 'created'
+    search_fields = ('mail_message_id',)
 admin.site.register(Message,MessageAdmin)
 
 ### Publication

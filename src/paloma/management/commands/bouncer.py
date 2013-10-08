@@ -7,6 +7,10 @@ from datetime import datetime
 from django.conf import settings
 
 from ...tasks import journalize,process_journal
+
+import logging,traceback
+log = logging.getLogger(__name__)
+
 class Command(GenericCommand):
     ''' bouncer
     '''
@@ -21,20 +25,31 @@ class Command(GenericCommand):
 
         )   
 
+    def handle_test(self,*args,**options):
+        ''' simple testing '''
+        import uuid
+        msg = "running bouncer:signature=%s" % uuid.uuid1().hex
+        print "logging as:\n", msg
+        log.debug(msg)
+ 
     def handle_main(self,*args,**options):
         ''' main '''
         from paloma import report 
         import sys
         if sys.stdin.isatty():
             #: no stdin
-            report('no stdin')
+            log.warn('no stdin')
             return
 
         is_jailed = options.get('is_jailed',False)
 
-        jid = journalize(args[0],args[1],''.join(sys.stdin.read()),is_jailed ) #:message queuing
-        process_journal.delay(jid)
-        #: defualt is async
+        jid = journalize(args[0],args[1],''.join(sys.stdin.read()),is_jailed ) #:message journalized
+        try:
+            log.debug("bouncer.handle_main:process journal =%d" % jid)
+            process_journal.delay(jid)      #: defualt is async
+        except:
+            for err in traceback.format_exc().split('\n'):
+                log.error("bouncer.handle_main:%s" % err )
 
     def handle_jail(self,*args,**options):
         ''' jail'''

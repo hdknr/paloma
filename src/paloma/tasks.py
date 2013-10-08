@@ -7,11 +7,18 @@ from django.db.models.loading import get_model as django_get_model
 get_model = lambda p : django_get_model( *(p +'.').split('.')[:2] )
 #: TODO: care of number of dots is larger then 1.
 
+
 from celery import current_task,app
+from celery.utils.log import get_task_logger
 from celery.task import task
+logger = get_task_logger(__name__)
+
 import exceptions
-import logging
 import traceback
+
+def _traceback(signature,msg):
+    for err in msg.split('\n'):
+        logger.debug( signature +":" + err )
 
 from models import (
         Publish,Publication,Circle,Member,Message,
@@ -134,11 +141,10 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
     """ recourde bounce mail
     """
     from models import Journal
-    log= current_task.get_logger()
 
-    log.debug('From=%s To %s (jailed=%s)'  % (sender,recipient,is_jailed) )
+    logger.debug('paloma.tasks.journalize:From=%s To %s (jailed=%s)'  % (sender,recipient,is_jailed) )
 
-    #: First of all, save messa to the Journal
+    #: First of all, save message to the Journal
     journal=None
     try:
         journal=Journal( 
@@ -148,7 +154,7 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
             text=text)
         journal.save()
     except Exception,e:
-        log.error( str(e) )
+        _traceback("paloma.tasks.journalize:", traceback.format_exc() )
     
     return journal and journal.id
 
@@ -156,27 +162,29 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
 def process_journal(journal_id=None,*args,**kwargs):
     """ main bounce woker
     """
-    log= current_task.get_logger()
+    logger.debug("paloma.tasks.process_journal:%s" % str(journal_id))
     try:
         journal = Journal.objects.get(id = journal_id )
     except Exception,e:
-        log.debug("task.process_journal:"+ str(e) )
-        log.debug( traceback.format_exc().replace('\n','/') )
+        _traceback("task.process_journal",traceback.format_exc())
         return
 
     if journal.is_jailed == True:
+        logger.debug("task.process_journal: this message is a jailed message.")
         return
 
     #:Error Mail Handler 
     if process_error_mail(journal.recipient,journal.sender,journal.id):
-        log.debug("task.process_journal:no error")
+        logger.debug("task.process_journal:no error")
         return  
 
     #: actions
     if not process_action(journal.sender, journal.recipient,journal) :
-        log.debug("deleting this journal")
+        logger.debug("task.process_journal:deleting this journal because no action is defined in the application.")
         journal.delete()        #: delete ?????
-        
+
+    logger.debug("paloma.tasks.process_journal:processed")
+
 @task
 def enqueue_publish(sender,publish_id=None,publish=None,
         member_filter={},member_exclude={}):
