@@ -110,7 +110,6 @@ class AbstractProfile(models.Model):
     class Meta:
         abstract=True
 
-
 class Site(models.Model):
     ''' Site
     '''
@@ -291,6 +290,10 @@ class Circle(models.Model):
         
     def is_member (self,user): 
         return self.membership_set.filter(member__user = user ).exists()
+
+    @property
+    def memberships(self):
+        return self.membership_set.all()
 
     def are_member(self,users):
         ''' all users are member of this Circle '''

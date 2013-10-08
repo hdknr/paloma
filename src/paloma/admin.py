@@ -124,6 +124,7 @@ admin.site.register(Circle,CircleAdmin)
 class MembershipAdmin(admin.ModelAdmin):
     list_display=('id','circle_link','member_link','is_admin',)
     list_filter=('circle','is_admin',)
+    search_fields = ('member__address',)
 MembershipAdmin.member_link = member_link
 MembershipAdmin.circle_link = circle_link
 admin.site.register(Membership,MembershipAdmin)
@@ -137,6 +138,7 @@ class MembershipInline(admin.StackedInline):
 class MemberAdmin(admin.ModelAdmin):
     list_display=('id','user_link','address','is_active','bounces',)
     inlines = [MembershipInline,]
+    search_fields = ('address',)
 MemberAdmin.user_link = user_link
 admin.site.register(Member,MemberAdmin)
 
@@ -179,6 +181,7 @@ admin.site.register(Provision,ProvisionAdmin)
 ### Journal 
 class JournalAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Journal._meta.fields ])
+    date_hierarchy = 'dt_created'
 admin.site.register(Journal,JournalAdmin)
 
 ##############
