@@ -156,16 +156,16 @@ class Site(models.Model):
 class Template(models.Model):
     ''' Site Notice Text '''
 
-    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    site= models.ForeignKey(Site,verbose_name=_(u'Owner Site') )
     ''' Owner Site'''
 
-    name = models.CharField(u'Notice Name',max_length=100,db_index=True,)
+    name = models.CharField(_(u'Template Name'),max_length=100,db_index=True,)
     ''' Notice Name'''
 
-    subject= models.CharField(u'Subject',max_length=100 ,default='',)
+    subject= models.CharField(_(u'Template Subject'),max_length=100 ,default='',)
     ''' Subject '''
 
-    text =  models.TextField(u'Text',max_length=100 ,default='',)
+    text =  models.TextField(_(u'Template Text'),max_length=100 ,default='',)
     ''' Text '''
 
     @classmethod
@@ -185,6 +185,8 @@ class Template(models.Model):
  
     class Meta:
         unique_together = ( ('site','name') ,)
+        verbose_name = _(u'Template')
+        verbose_name_plural = _(u'Templates')
 
 
 class Targetting(models.Model):
@@ -376,6 +378,7 @@ class Membership(models.Model):
         return self.member.user.get_absolute_url() if self.member and self.member.user else None
 
     class Meta:
+        unique_together=(('member','circle',),)
         verbose_name = _(u'Membership')
         verbose_name_plural = _(u'Memberships')
 
