@@ -367,6 +367,19 @@ class Membership(models.Model):
 
     is_admin = models.BooleanField(_(u'Is Circle Admin'),default=False)
 
+    def is_member_active(self):
+        return self.member.is_active
+
+    is_member_active.short_description=u"Is Member Active"
+
+    def is_user_active(self):
+        return self.member.user.is_active 
+
+    is_user_active.short_description=u"Is User Active"
+
+    def user(self):
+        return self.member.user
+
     def __unicode__(self):
         return  "%s -> %s(%s)" %( 
                     self.member.__unicode__() if self.member else "N/A",

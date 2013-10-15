@@ -122,7 +122,7 @@ admin.site.register(Circle,CircleAdmin)
 
 ## Membership 
 class MembershipAdmin(admin.ModelAdmin):
-    list_display=('id','circle_link','member_link','is_admin',)
+    list_display=('id','circle_link','member_link','user','is_admin','is_member_active','is_user_active',)
     list_filter=('circle','is_admin',)
     search_fields = ('member__address',)
 MembershipAdmin.member_link = member_link
