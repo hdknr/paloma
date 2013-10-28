@@ -233,21 +233,21 @@ class CircleManager(models.Manager):
 class Circle(models.Model):
     ''' Circle 
     '''
-    site = models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    site = models.ForeignKey(Site,verbose_name=_(u'Owner Site') )
     ''' Owner Site'''
 
-    name = models.CharField(u'Circle Name',max_length=100 ,db_index=True )
+    name = models.CharField(_(u'Circle Name'),max_length=100 ,db_index=True )
     ''' Circle Name '''
 
-    symbol= models.CharField(u'Symbol',max_length=100 ,db_index=True ,
-                    help_text=u'Used for Email address of group with site.domain',
+    symbol= models.CharField(_(u'Circle Symbol'),max_length=100 ,db_index=True ,
+                    help_text=_(u'Circle Symbol Help Text'),
                     )
     ''' Symbol '''
 
-    is_default = models.BooleanField(default=False,help_text=_('Is Default Circle'),)
+    is_default = models.BooleanField(_(u'Is Default Circle'),default=False,help_text=_('Is Default Circle Help'),)
     ''' Site's Default Circle or not '''
 
-    is_moderated= models.BooleanField(default=True,)
+    is_moderated= models.BooleanField(_(u'Is Moderated Circle'),default=True,help_text=_('Is Moderated Circle Help'),)
     ''' True: Only operators(Membership.is_admin True) can circulate their message.'''
 
 #    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
@@ -372,6 +372,10 @@ class Membership(models.Model):
     ''' Circle'''
 
     is_admin = models.BooleanField(_(u'Is Circle Admin'),default=False)
+
+    is_admitted= models.BooleanField(_(u'Is Membership Admitted'),
+                            default=False,help_text=_(u'Is Membership Admitted Help') )
+    ''' Member must be admitted by a Circle Admin to has a Membership '''
 
     def is_member_active(self):
         return self.member.is_active
