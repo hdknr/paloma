@@ -297,6 +297,12 @@ class Circle(models.Model):
     def memberships(self):
         return self.membership_set.all()
 
+    def membership_for_user(self,user):
+        try:
+            return self.membership_set.get(member__user = user )
+        except:
+            return None  
+
     def are_member(self,users):
         ''' all users are member of this Circle '''
         return all( map( lambda u : self.membership_set.filter(member__user = u).exists(),users ))
