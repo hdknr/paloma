@@ -282,13 +282,13 @@ class Circle(models.Model):
 #            #:Default Circle MUST has operators
 #            map(lambda o : self.operators.add(o),self.site.operators.all())
     def is_admin_user(self,user): 
-        return self.membership_set.filter(member__user = user, is_admin=True).exists()
+        return user.is_superuser or self.membership_set.filter(member__user = user, is_admin=True).exists()
 
     def is_admin(self,user): 
-        return self.membership_set.filter(member__user = user, is_admin=True).exists()
+        return user.is_superuser or self.membership_set.filter(member__user = user, is_admin=True).exists()
 
     def is_operator(self,user): 
-        return self.membership_set.filter(member__user = user, is_admin=True).exists()
+        return user.is_superuser or self.membership_set.filter(member__user = user, is_admin=True).exists()
         
     def is_member (self,user): 
         return self.membership_set.filter(member__user = user ).exists()
