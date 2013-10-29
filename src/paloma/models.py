@@ -302,6 +302,9 @@ class Circle(models.Model):
             return self.membership_set.get(member__user = user )
         except:
             return None  
+    @property
+    def memberships_unadmitted(self):
+        return self.membership_set.filter(is_admitted=False)
 
     def are_member(self,users):
         ''' all users are member of this Circle '''
