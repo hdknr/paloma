@@ -312,8 +312,12 @@ class Circle(models.Model):
 
     def any_admin(self):
         try:
-            return self.membership_set.filter(is_admin=True)[0].member.user
-        except:
+            admin_list = self.membership_set.filter(is_admin=True)
+            if admin_list.count()>0:
+                return admin_list[0]
+    
+            return User.objects.filter(is_superuser=True)[0]
+        except Exception,e:
             return None    
         
     class Meta:
