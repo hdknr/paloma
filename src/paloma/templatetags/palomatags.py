@@ -59,16 +59,15 @@ class IfAdminNode(Node):
         context.update(values)
 
         user = self.user_var.resolve(context)
-        circle = self.circle_var.resolve(context)
+        circle = self.circle_var.resolve(context) 
 
         assert isinstance(user,User)
-        assert isinstance(circle,Circle)
 
-        if circle.is_admin(user) :
-            print "@@@@@@@ is admin"
+        if circle == '__any__' and Circle.objects.of_admin(user).exists():
+            output =  self.nodelist.render(context)
+        elif type(circle) == Circle and circle.is_admin(user) :
             output =  self.nodelist.render(context)
         else :
-            print "@@@@@@@ is not admin"
             output =  ""
         #:ブロックタグに挟まれているテンプレートをレンダリング
         #:権限があるときだけレンダリングする
