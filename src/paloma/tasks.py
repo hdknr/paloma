@@ -231,11 +231,12 @@ def enqueue_mails_for_publish(sender,publish_id,
             for member in circle.member_set.filter(**member_filter).exclude( **member_exclude ):
                 pub= Publication.objects.publish(publish,circle,member,signature)
                 assert pub.message != None
-                if async:
-                    t=enqueue_mail.delay(mail_id=pub.message.id)
-                else:
-                    t=enqueue_mail.apply((),{'mail_obj':pub.message})
-
+                t=enqueue_mail.apply_async((),{'mail_id':pub.message.id,})
+#                if async:
+#                    t=enqueue_mail.delay(mail_id=pub.message.id)
+#                else:
+#                    t=enqueue_mail.apply((),{'mail_obj':pub.message})
+#
                 pub.message.task_id = t.id
                 pub.message.save()
 
@@ -249,40 +250,36 @@ def enqueue_mail(mail_id=None,mail_class="paloma.Message",mail_obj=None,async=Tr
     '''
     mail_obj= mail_obj or get_model(mail_class).objects.get(id=mail_id) 
 
-    log = current_task.get_logger()
-    log.debug('tasks.enqueue_mail %s %s' % (mail_id,mail_obj))
-
     current_time = now()
 
     try:
-        if any([
-            current_task.request.is_eager == False , #: This task is async, so sending mail synchronously.
-            async==False ,
-               ]):
-            #: sendmail right now
-            t =deliver_mail.apply((),{'mail_obj':mail_obj}) 
-        else:
-            #: sendmail asynchronously now
-            t =deliver_mail.deley(mail_obj.id,str(mail_obj._meta))
+#        if any([
+#            current_task.request.is_eager == False , #: This task is async, so sending mail synchronously.
+#            async==False ,
+#               ]):
+#            #: sendmail right now
+#            t =deliver_mail.apply((),{'mail_obj':mail_obj}) 
+#        else:
+#            #: sendmail asynchronously now
+#            t =deliver_mail.deley(mail_obj.id,str(mail_obj._meta))
+        t =deliver_mail.apply_async((),{'mail_id':mail_obj.id, }) 
 
         mail_obj.task_id = t.task_id
         mail_obj.save()
 
     except Exception,e:
-        log.error("enqueue_mail(): %s" % str(e))
-        log.debug( str(e) +"\n"+  traceback.format_exc().replace('\n','/') )
-         
+        logger.error("enqueue_mail(): %s" % str(e))
+        map(lambda msg:  logger.debug( str(msg)), traceback.format_exc().split('\n') )
 
 @task
-def deliver_mail(mail_id=None,mail_class=None,mail_obj=None,*args,**kwargs):
+def deliver_mail(mail_id=None,mail_class='paloma.Message',mail_obj=None,*args,**kwargs):
     ''' send actual mail
         
     .. todo::
         - Message status is required
     '''
-    log = current_task.get_logger()
     try:
-        msg = mail_obj if mail_obj != None else get_model(mail_class).objects.get(id=mail_id) 
+        msg = mail_obj or get_model(mail_class).objects.get(id=mail_id) 
         #:TODO: check mail status. If already "SENDING" or "CANCELD", don't send
         #       check schedue status. If already "CANCELD", don't send
         send_mail(msg.subject,     #:TODO: Message should have rendered subject
@@ -296,9 +293,8 @@ def deliver_mail(mail_id=None,mail_class=None,mail_obj=None,*args,**kwargs):
         #:TODO: change the status
                   
     except Exception,e:
-        #: STMP error... ?
-        log.error("send_mail(): %s" % str(e))
-        log.debug( str(e) +  traceback.format_exc().replace('\n','/') )
+        logger.error("send_mail(): %s" % str(e))
+        map(lambda msg:  logger.debug( str(msg)), traceback.format_exc().split('\n') )
         #:TODO: 
         #   - error mail to Message
         #   - change status of Message

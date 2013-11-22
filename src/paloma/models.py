@@ -482,6 +482,10 @@ class Publish(models.Model):
                     pass 
         return context
 
+    def target_members_for_user(self,user):
+        return Member.objects.filter(
+                    membership__circle__in = self.circles.all(), 
+                    user=user )
     @property
     def is_timeup(self):
         return self.dt_start == None or self.dt_start <= now()
