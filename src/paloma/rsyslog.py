@@ -18,10 +18,11 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.contrib import admin
+import pytz
 
 # Models
-class Systemevents(models.Model):
-    id = models.IntegerField(primary_key=True, db_column='ID') # Field name made lowercase.
+class Systemevent(models.Model):
+    id = models.AutoField(primary_key=True, db_column='ID') # Field name made lowercase.
     customerid = models.BigIntegerField(null=True, db_column='CustomerID', blank=True) # Field name made lowercase.
     receivedat = models.DateTimeField(null=True, db_column='ReceivedAt', blank=True) # Field name made lowercase.
     devicereportedtime = models.DateTimeField(null=True, db_column='DeviceReportedTime', blank=True) # Field name made lowercase.
@@ -45,11 +46,16 @@ class Systemevents(models.Model):
     eventlogtype = models.CharField(max_length=60L, db_column='EventLogType', blank=True) # Field name made lowercase.
     genericfilename = models.CharField(max_length=60L, db_column='GenericFileName', blank=True) # Field name made lowercase.
     systemid = models.IntegerField(null=True, db_column='SystemID', blank=True) # Field name made lowercase.
+
+    @property
+    def receivedat_local(self):
+        return self.receivedat.replace(tzinfo=pytz.timezone('Asia/Tokyo')) 
+
     class Meta:
         db_table = 'SystemEvents'
 
-class Systemeventsproperties(models.Model):
-    id = models.IntegerField(primary_key=True, db_column='ID') # Field name made lowercase.
+class Systemeventsproperty(models.Model):
+    id = models.AutoField(primary_key=True, db_column='ID') # Field name made lowercase.
     systemeventid = models.IntegerField(null=True, db_column='SystemEventID', blank=True) # Field name made lowercase.
     paramname = models.CharField(max_length=255L, db_column='ParamName', blank=True) # Field name made lowercase.
     paramvalue = models.TextField(db_column='ParamValue', blank=True) # Field name made lowercase.
@@ -59,10 +65,11 @@ class Systemeventsproperties(models.Model):
 
 # Systemevents Systemeventsproperties Admin
 
-class SystemeventsAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Systemevents._meta.fields ])
-admin.site.register(Systemevents,SystemeventsAdmin)
+class SystemeventAdmin(admin.ModelAdmin):
+    list_display=['id','receivedat','receivedat_local', 'facility', 'priority', 'fromhost', 'message', 'syslogtag', ]
+    date_hierarchy = 'receivedat'
+admin.site.register(Systemevent,SystemeventAdmin)
 
-class SystemeventspropertiesAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Systemeventsproperties._meta.fields ])
-admin.site.register(Systemeventsproperties,SystemeventspropertiesAdmin)
+class SystemeventspropertyAdmin(admin.ModelAdmin):
+    list_display=tuple([f.name for f in Systemeventsproperty._meta.fields ])
+admin.site.register(Systemeventsproperty,SystemeventspropertyAdmin)
