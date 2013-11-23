@@ -13,6 +13,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 
 from email import message_from_string
+from celery.result import AsyncResult
 
 from datetime import datetime,timedelta
 import sys,traceback
@@ -491,6 +492,13 @@ class Publish(models.Model):
     def is_timeup(self):
         return self.dt_start == None or self.dt_start <= now()
 
+    @property
+    def task(self):
+        try:
+            return AsyncResult(self.task_id)
+        except:
+            return None
+        
     class Meta:
         verbose_name= _(u'Publish')
         verbose_name_plural= _(u'Publish')
@@ -596,6 +604,14 @@ class Message(models.Model):
         except:
             return unicode(self.id)
 
+    @property
+    def task(self):
+        try:
+            return AsyncResult(self.task_id)
+        except:
+            return None
+        
+        
 #    def save(self,force_insert=False,force_update=False,*args,**kwargs):         
 #        ''' override save() '''
 #        
