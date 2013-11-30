@@ -321,7 +321,13 @@ class Circle(models.Model):
             return User.objects.filter(is_superuser=True)[0]
         except Exception,e:
             return None    
-        
+
+    def add_member(self,member,is_admin=False,):
+        membership,created = Membership.objects.get_or_create(circle=self,member=member)
+        membership.is_admin = is_admin
+        membership.save()
+        return membership
+
     class Meta:
         unique_together = ( ('site','name') ,
                             ('site','symbol'),
@@ -340,7 +346,6 @@ class Member(models.Model):
     address = models.CharField(_(u'Forward address'),max_length=100 ,unique=True)
     ''' Email Address 
     '''
-
     is_active = models.BooleanField(_(u'Actaive status'),default=False )
     ''' Active Status '''
 
