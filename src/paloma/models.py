@@ -322,9 +322,10 @@ class Circle(models.Model):
         except Exception,e:
             return None    
 
-    def add_member(self,member,is_admin=False,):
+    def add_member(self,member,is_admin=False,is_admitted=False):
         membership,created = Membership.objects.get_or_create(circle=self,member=member)
         membership.is_admin = is_admin
+        membership.is_admitted = is_admitted
         membership.save()
         return membership
 
