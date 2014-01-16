@@ -300,7 +300,8 @@ class Circle(models.Model):
         return user.is_superuser or self.membership_set.filter(member__user = user, is_admin=True).exists()
         
     def is_member (self,user): 
-        return self.membership_set.filter(member__user = user ).exists()
+        return self.membership_set.filter(member__user = user
+                , is_admitted = True ).exists()
 
     @property
     def memberships(self):
