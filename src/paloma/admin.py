@@ -124,7 +124,7 @@ admin.site.register(Circle,CircleAdmin)
 class MembershipAdmin(admin.ModelAdmin):
     list_display=('id','circle_link','member_link','user','is_admin','is_member_active','is_user_active','is_admitted',)
     list_filter=('circle','is_admin',)
-    search_fields = ('member__address',)
+    search_fields = ('member__address','member__user__username',)
 MembershipAdmin.member_link = member_link
 MembershipAdmin.circle_link = circle_link
 admin.site.register(Membership,MembershipAdmin)
@@ -138,7 +138,7 @@ class MembershipInline(admin.StackedInline):
 class MemberAdmin(admin.ModelAdmin):
     list_display=('id','user_link','address','is_active','bounces',)
     inlines = [MembershipInline,]
-    search_fields = ('address',)
+    search_fields = ('address','user__username',)
 MemberAdmin.user_link = user_link
 admin.site.register(Member,MemberAdmin)
 

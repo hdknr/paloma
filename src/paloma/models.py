@@ -251,6 +251,9 @@ class Circle(models.Model):
     is_moderated= models.BooleanField(_(u'Is Moderated Circle'),default=True,help_text=_('Is Moderated Circle Help'),)
     ''' True: Only operators(Membership.is_admin True) can circulate their message.'''
 
+    is_secret = models.BooleanField(_(u'Is Secret Circle'),default=False ,help_text=_('Is Secret Circle Help'),)
+    ''' True: only membership users know its existence '''
+
 #    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
 #    ''' Group Operators
 #    '''
