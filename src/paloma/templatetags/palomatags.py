@@ -32,8 +32,7 @@ def app_site():
 def app_circles(user=None):
     ''' application circles'''
     if user:
-        return Site.app_site().circle_set.filter(  
-                    membership__member__user = user ).order_by('-is_default')
+        return Site.app_site().circle_set.accessible_list(user).order_by( '-is_default')
     return Site.app_site().circle_set.all().order_by('-is_default')
 
 

@@ -222,6 +222,11 @@ class CircleManager(models.Manager):
             q['symbol'] = symbol
         return self.get(**q)
 
+    def accessible_list(self,user):
+        return self.filter(
+                Q(membership__member__user=user )| Q(is_secret = False ) 
+            ).distinct()
+
     def of_user(self,user ):
         return self.filter(membership__member__user = user)
 
