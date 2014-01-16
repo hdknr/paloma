@@ -757,8 +757,11 @@ class Provision(models.Model):
         self.member.is_active = is_active
         self.member.save()
         if self.circle:
-            membershop,created = Membership.objects.get_or_create(
+            membership,created = Membership.objects.get_or_create(
                             circle = self.circle, member = self.member )
+            membership.is_admitted = is_active
+            membership.save()
+                
         self.dt_commit = now()
         self.save()
 
