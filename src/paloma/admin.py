@@ -183,6 +183,7 @@ admin.site.register(Publish,PublishAdmin)
 ### Provision
 class ProvisionAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Provision._meta.fields ])
+    search_fields = ('prospect',)
 admin.site.register(Provision,ProvisionAdmin)
 
 ### Journal

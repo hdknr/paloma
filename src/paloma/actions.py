@@ -18,7 +18,7 @@ import re
 from utils import create_auto_secret,create_auto_short_secret
 
 import logging
-log = logging.getLogger(__name__)
+log = logging.getLogger('paloma',)
 
 def action(pattern,*dargs,**dkwargs):
     ''' Action Decorator 
@@ -54,6 +54,7 @@ def process_action(sender,recipient ,journal):
                         for k,v in __import__(actions,{},{},['*'] ).__dict__.items() )
         except Exception,e:
             log.debug('process_action:'+str(e) )
-            log.debug( str(e) +  traceback.format_exc().replace('\n','/') )
+            for err in traceback.format_exc().split('\n'):
+                log.debug("----" + err )
     #: return action status( True : processed )
     return processed
