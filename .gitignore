@@ -9,8 +9,8 @@ build
 dist
 src/paloma.egg-info
 run
-app.log*
+*.log*
 *.db
 *.DS_Store
 env.dev.bash
-
+*.sqlite3

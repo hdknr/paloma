@@ -9,3 +9,4 @@ django_extensions
 pytz
 jsonfield
 python-dateutil
+beautifulsoup4

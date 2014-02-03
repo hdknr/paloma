@@ -37,7 +37,7 @@ BACKEND = getattr(settings, 'SMTP_EMAIL_BACKEND',
 
 @task(serializer='pickle')          #: An EmailMessage object MUST be pickled.
 def send_email(message, **kwargs):
-    ''' message : django EmailMessage 
+    ''' message : django EmailMessage
     '''
     logger = current_task.get_logger()
     try:
@@ -65,7 +65,7 @@ def send_email_in_string(return_path,recipients, message_string,**extended):
     except Exception, e:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
-        logger.debug( traceback.format_exc() ) 
+        logger.debug( traceback.format_exc() )
         logger.warning("send_email_in_string:Failed to send email message to %r, retrying.",
                     recipients)
         send_email_in_string.retry(exc=e)
@@ -89,14 +89,14 @@ def process_error_mail(recipient,sender,journal_id):
 
     if recipient in ['',None]:
         #: Simpley Error Mail!
-        #: TODO: error marking... 
+        #: TODO: error marking...
         return True
-    
+
     try:
         param =  return_path_from_address(recipient)
         assert param['message_id'] != ""
         assert param['domain'] != ""
-        
+
         try:
             #: Jourmal mail object
             journal_msg=Journal.objects.get(id=journal_id).mailobject()
@@ -122,17 +122,17 @@ def process_error_mail(recipient,sender,journal_id):
 
         except:
             pass
-            
+
     except exceptions.AttributeError,e:
         #:May be normal address..
         #:Other handler will be called.
         return False
-         
+
     return False
 
 def call_task_by_name(mod_name,task_name,*args,**kwargs):
     """ call task by name """
-    
+
     m = __import__(mod_name,globals(),locals(),["*"])
     return getattr(m,task_name).delay( *args,**kwargs)
 
@@ -147,7 +147,7 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
     #: First of all, save message to the Journal
     journal=None
     try:
-        journal=Journal( 
+        journal=Journal(
             sender=sender,
             recipient=recipient,
             is_jailed=is_jailed,
@@ -155,7 +155,7 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
         journal.save()
     except Exception,e:
         _traceback("paloma.tasks.journalize:", traceback.format_exc() )
-    
+
     return journal and journal.id
 
 @task
@@ -173,10 +173,10 @@ def process_journal(journal_id=None,*args,**kwargs):
         logger.debug("task.process_journal: this message is a jailed message.")
         return
 
-    #:Error Mail Handler 
+    #:Error Mail Handler
     if process_error_mail(journal.recipient,journal.sender,journal.id):
         logger.debug("task.process_journal:no error")
-        return  
+        return
 
     #: actions
     if not process_action(journal.sender, journal.recipient,journal) :
@@ -201,8 +201,7 @@ def enqueue_publish(sender,publish_id=None,publish=None,
             args['id'] = publish_id
         log.debug("specified Publish is = %s" % str(args))
         q =  Publish.objects.filter(**args)
-    
-    print "publishes=",q
+
     for publish in q:
         t=enqueue_mails_for_publish.delay(
             sender,publish.id ,member_filter,member_exclude) #: Asynchronized Call
@@ -217,7 +216,7 @@ def enqueue_mails_for_publish(sender,publish_id,
                 signature="pub",async=True):
     ''' Enqueu mails for speicifed Publish
 
-        :param member_query: dict for query 
+        :param member_query: dict for query
 
     .. todo::
         - Custum QuerSet fiilter to targetting user.
@@ -225,8 +224,8 @@ def enqueue_mails_for_publish(sender,publish_id,
     '''
     log = current_task.get_logger()
     member_exclude.update( {'user':None } )
-    try:   
-        publish = Publish.objects.get(id = publish_id ) 
+    try:
+        publish = Publish.objects.get(id = publish_id )
         for circle in publish.circles.all():
             for member in circle.member_set.filter(**member_filter).exclude( **member_exclude ):
                 pub= Publication.objects.publish(publish,circle,member,signature)
@@ -244,42 +243,35 @@ def enqueue_mails_for_publish(sender,publish_id,
         log.error( "enqueue_mails_for_publish():" +  str(e) )
         log.debug( traceback.format_exc().replace('\n','/') )
 
+
 @task
-def enqueue_mail(mail_id=None,mail_class="paloma.Message",mail_obj=None,async=True,):
+def enqueue_mail(mail_id=None, mail_class="paloma.Message",
+                 mail_obj=None, async=True,):
     ''' Enqueue a Meail
     '''
-    mail_obj= mail_obj or get_model(mail_class).objects.get(id=mail_id) 
-
-    current_time = now()
+    mail_obj = mail_obj or get_model(mail_class).objects.get(id=mail_id)
 
     try:
-#        if any([
-#            current_task.request.is_eager == False , #: This task is async, so sending mail synchronously.
-#            async==False ,
-#               ]):
-#            #: sendmail right now
-#            t =deliver_mail.apply((),{'mail_obj':mail_obj}) 
-#        else:
-#            #: sendmail asynchronously now
-#            t =deliver_mail.deley(mail_obj.id,str(mail_obj._meta))
-        t =deliver_mail.apply_async((),{'mail_id':mail_obj.id, }) 
+        t = deliver_mail.apply_async((), {'mail_id': mail_obj.id, })
 
         mail_obj.task_id = t.task_id
         mail_obj.save()
 
-    except Exception,e:
+    except Exception, e:
         logger.error("enqueue_mail(): %s" % str(e))
-        map(lambda msg:  logger.debug( str(msg)), traceback.format_exc().split('\n') )
+        map(lambda msg: logger.debug(str(msg)),
+            traceback.format_exc().split('\n'))
+
 
 @task
 def deliver_mail(mail_id=None,mail_class='paloma.Message',mail_obj=None,*args,**kwargs):
     ''' send actual mail
-        
+
     .. todo::
         - Message status is required
     '''
     try:
-        msg = mail_obj or get_model(mail_class).objects.get(id=mail_id) 
+        msg = mail_obj or get_model(mail_class).objects.get(id=mail_id)
         #:TODO: check mail status. If already "SENDING" or "CANCELD", don't send
         #       check schedue status. If already "CANCELD", don't send
         send_mail(msg.subject,     #:TODO: Message should have rendered subject
@@ -291,25 +283,35 @@ def deliver_mail(mail_id=None,mail_class='paloma.Message',mail_obj=None,*args,**
                   model_class= str(msg._meta),          #: for replay model class in logging
             )
         #:TODO: change the status
-                  
+
     except Exception,e:
         logger.error("send_mail(): %s" % str(e))
         map(lambda msg:  logger.debug( str(msg)), traceback.format_exc().split('\n') )
-        #:TODO: 
+        #:TODO:
         #   - error mail to Message
         #   - change status of Message
+
+
+@task
+def send_templated_message(member_or_address, template_name, params,
+                           mssage_id=None, circle=None):
+    msg = Message.objects.create_from_template(
+            member_or_address, template_name, params,
+            message_id, circle)
+
+    enqueue_mail(mail_obj=msg)
 
 ###############
 
 def do_enqueue_publish(publish, right_now=False,*args,**kwargs):
-    ''' helper te enqueue_publish 
+    ''' helper te enqueue_publish
     '''
     task_args= ("admin",publish.id) + args
     if right_now or publish.is_timeup:
         t = enqueue_publish.apply_async( task_args,kwargs ,)
     else:
         t = enqueue_publish.apply_async( task_args,kwargs ,
-                eta= make_eta(publish.dt_start) ) 
+                eta= make_eta(publish.dt_start) )
 
     publish.task_id =t.id
     publish.save()
@@ -329,7 +331,7 @@ def apply_publish(publish):
 @task
 def smtp_status(sender,msg,**extended):
     log = current_task.get_logger()
-    log.debug('tasks.smtp_status:%s:%s:%s' % ( sender, msg,str(extended) ) ) 
+    log.debug('tasks.smtp_status:%s:%s:%s' % ( sender, msg,str(extended) ) )
 #     model_class = get_model( *(extended.get('model_class','')+'.').split('.')[:2])
     model_class = get_model( extended.get('model_class',''))
     model_class and getattr(model_class,'update_status',lambda *x,**y:None)(msg,**extended)
@@ -342,3 +344,4 @@ def test(msg="test",*args,**kwargs):
     print "is_eager=",t.request.is_eager
     print "id=",t.request.id
     print msg, args,kwargs
+

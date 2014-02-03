@@ -1,10 +1,12 @@
 from django.test import TestCase
 
 import os
+import uuid
 from bs4 import BeautifulSoup as Soup
 
 from paloma.models import (
     Template,
+    Message,
 )
 
 
@@ -71,3 +73,25 @@ class TemplateTest(TestCase):
         soup = Soup(open(path))
         self.assertEqual(t.subject, soup.select('subject')[0].text)
         self.assertEqual(t.text, soup.select('text')[0].text)
+
+    def test_create_message(self):
+        """
+        python manage.py test shops.TemplateTest.test_create_message
+        """
+
+        # create default template
+        path = os.path.join(
+            os.path.dirname(__file__),
+            'templates/paloma/mails/default_campaign.html'
+        )
+        with open(path, "w") as data:
+            data.write('<subject> Camplaign </subject>'
+                       '<text>Thank You.{{ code }}</text>')
+
+        code = uuid.uuid1().hex
+        params = {'code':  code, }
+        msg = Message.objects.create_from_template(
+            'test@hdknr.com', "CAMPAIGN", params=params, )
+
+        self.assertIsNotNone(msg)
+        self.assertTrue(msg.text.find(code) >= 0)

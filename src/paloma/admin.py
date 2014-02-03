@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.contrib.contenttypes import generic
 from django.conf import settings
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _ 
-from celery import app
+from django.utils.translation import ugettext_lazy as _
+from django.forms import ModelForm
 
 from models import *
 from tasks import apply_publish
 
 
 def link_to_relation(self,obj,field=""):
-    ''' relation field link 
+    ''' relation field link
         - self : Admin
         - obj  : Model Instance
         - filed : Field Name
@@ -19,13 +19,13 @@ def link_to_relation(self,obj,field=""):
     if obj == None:
         return ""
 
-    fobj=getattr(obj,field,None) 
+    fobj=getattr(obj,field,None)
     if fobj:
         url = reverse( "admin:%s_change" % fobj._meta.db_table,
-                args=[ fobj.id ] ) 
+                args=[ fobj.id ] )
         return '<a href="%s">%s</a>' % (url,
                 fobj.__unicode__() )
-            
+
 user_link =  lambda self,obj : link_to_relation(self,obj,"user" )
 user_link.short_description = _(u"System User")
 user_link.allow_tags = True
@@ -57,7 +57,7 @@ if settings.DEBUG:
         class KombuQueueAdmin(admin.ModelAdmin):
             list_display=tuple([f.name for f in KombuQueue._meta.fields ])
         admin.site.register(KombuQueue,KombuQueueAdmin)
-        
+
         ### define __unicode__ to Queue class
         #
         #def __unicode__(self):
@@ -75,23 +75,23 @@ if settings.DEBUG:
             list_filter = ('status',)
             date_hierarchy = 'date_done'
         admin.site.register(TaskMeta,TaskMetaAdmin)
-        
+
         ### TaskSetMeta
         class TaskSetMetaAdmin(admin.ModelAdmin):
             list_display=tuple([f.name for f in TaskSetMeta._meta.fields])
         admin.site.register(TaskSetMeta,TaskSetMetaAdmin)
-        
-        
+
+
     except Exception,e:
         print e
         pass
 
-### Domain 
+### Domain
 class DomainAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Domain._meta.fields ])
 admin.site.register(Domain,DomainAdmin)
 
-### Alias 
+### Alias
 class AliasAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Alias._meta.fields ])
 admin.site.register(Alias,AliasAdmin)
@@ -99,12 +99,19 @@ admin.site.register(Alias,AliasAdmin)
 
 #################################################
 
-### Site 
-class SiteAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Site._meta.fields ])
-admin.site.register(Site,SiteAdmin)
+class SiteAdminForm(ModelForm):
+    class Meta:
+        model = Site
 
-### Targetting 
+
+class SiteAdmin(admin.ModelAdmin):
+    form = SiteAdminForm
+    list_display = tuple([f.name for f in Site._meta.fields])
+
+
+admin.site.register(Site, SiteAdmin)
+
+### Targetting
 
 class TargettingInline(generic.GenericTabularInline):
     model = Targetting
@@ -115,12 +122,12 @@ class TargettingAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Targetting._meta.fields ])
 admin.site.register(Targetting,TargettingAdmin)
 
-### Circle 
+### Circle
 class CircleAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Circle._meta.fields ])
 admin.site.register(Circle,CircleAdmin)
 
-## Membership 
+## Membership
 class MembershipAdmin(admin.ModelAdmin):
     list_display=('id','circle_link','member_link','user','is_admin','is_member_active','is_user_active','is_admitted',)
     list_filter=('circle','is_admin',)
@@ -134,7 +141,7 @@ class MembershipInline(admin.StackedInline):
     model=Membership
     extra = 0
 #
-### Member 
+### Member
 class MemberAdmin(admin.ModelAdmin):
     list_display=('id','user_link','address','is_active','bounces',)
     inlines = [MembershipInline,]
@@ -142,7 +149,7 @@ class MemberAdmin(admin.ModelAdmin):
 MemberAdmin.user_link = user_link
 admin.site.register(Member,MemberAdmin)
 
-### Publish 
+### Publish
 class PublishAdmin(admin.ModelAdmin):
 #    list_display=tuple([f.name for f in Publish._meta.fields ])
     list_display=('id','site','publisher','subject','text','task_id','status','dt_start','activated_at',)
@@ -152,20 +159,20 @@ class PublishAdmin(admin.ModelAdmin):
     ]
     date_hierarchy = 'dt_start'
     def save_model(self, request, obj, form, change):
-        ''' Saving... 
+        ''' Saving...
 
             :param request: request object to view
             :param obj: Publish instance
             :param form: Form instance
             :param change: bool
-        ''' 
+        '''
         if all(['status' in form.changed_data,
                obj.status == 'scheduled',
                any([obj.dt_start and obj.dt_start < now() ,
-                    obj.task_id not in [None ,""], ]), 
+                    obj.task_id not in [None ,""], ]),
             ]):
             #: do nothing
-            return 
+            return
 
         super(PublishAdmin,self).save_model(request,obj,form,change)
         apply_publish(obj)
@@ -178,7 +185,7 @@ class ProvisionAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Provision._meta.fields ])
 admin.site.register(Provision,ProvisionAdmin)
 
-### Journal 
+### Journal
 class JournalAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Journal._meta.fields ])
     date_hierarchy = 'dt_created'
@@ -186,7 +193,7 @@ admin.site.register(Journal,JournalAdmin)
 
 ##############
 
-### Template 
+### Template
 class TemplateAdmin(admin.ModelAdmin):
     list_display=tuple([f.name for f in Template._meta.fields ])
 admin.site.register(Template,TemplateAdmin)
