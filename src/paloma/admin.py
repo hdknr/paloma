@@ -5,12 +5,13 @@ from django.conf import settings
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from django.forms import ModelForm
+from django.core.urlresolvers import reverse
 
 from models import *
 from tasks import apply_publish
 
 
-def link_to_relation(self,obj,field=""):
+def link_to_relation(self, obj, field=""):
     ''' relation field link
         - self : Admin
         - obj  : Model Instance
