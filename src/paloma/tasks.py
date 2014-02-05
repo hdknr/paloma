@@ -294,10 +294,10 @@ def deliver_mail(mail_id=None,mail_class='paloma.Message',mail_obj=None,*args,**
 
 @task
 def send_templated_message(member_or_address, template_name, params,
-                           mssage_id=None, circle=None):
+                           message_id=None, circle=None):
     msg = Message.objects.create_from_template(
-            member_or_address, template_name, params,
-            message_id, circle)
+        member_or_address, template_name, params,
+        message_id, circle)
 
     enqueue_mail(mail_obj=msg)
 
