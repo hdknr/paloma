@@ -25,7 +25,7 @@ from utils import (
 )
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('paloma')
 
 DEFAULT_RETURN_PATH_RE = r"bcmsg-(?P<message_id>\d+)@(?P<domain>.+)"
 DEFAULT_RETURN_PATH_FORMAT ="bcmsg-%(message_id)s@%(domain)s"
@@ -166,18 +166,19 @@ class TemplateManager(models.Manager):
     def get_template(self, name, site=None):
         site = site or Site.app_site()
         ret, created = self.get_or_create(site=site, name=name)
-        if created or ret.subject == u'' or ret.text == u'' or\
-            ret.subject == None or ret.text == None:
+        if created or not ret.subject or not ret.text:
             try:
                 path = 'paloma/mails/default_%s.html' % name.lower()
                 source = Soup(get_template_source(path))
                 ret.subject = source.select('subject')[0].text
+                ret.subject = ret.subject.replace('\n', '').replace('\r', '')
                 ret.text = source.select('text')[0].text
                 ret.save()
             except Exception:
                 logger.debug(traceback.format_exc())
 
         return ret
+
 
 class Template(models.Model):
     ''' Site Notice Text '''
@@ -603,6 +604,7 @@ class MessageManager(models.Manager):
                              params={},
                              message_id=None,
                              circle=None):
+        ''' Create Message from specified Template '''
 
         template_name = template_name.lower()
         msg = {

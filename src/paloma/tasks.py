@@ -11,7 +11,7 @@ get_model = lambda p : django_get_model( *(p +'.').split('.')[:2] )
 from celery import current_task,app
 from celery.utils.log import get_task_logger
 from celery.task import task
-logger = get_task_logger(__name__)
+logger = get_task_logger('paloma')
 
 import exceptions
 import traceback
@@ -252,19 +252,25 @@ def enqueue_mail(mail_id=None, mail_class="paloma.Message",
     mail_obj = mail_obj or get_model(mail_class).objects.get(id=mail_id)
 
     try:
-        t = deliver_mail.apply_async((), {'mail_id': mail_obj.id, })
+        if async:
+            t = deliver_mail.apply_async((), {'mail_id': mail_obj.id, })
 
-        mail_obj.task_id = t.task_id
+            mail_obj.task_id = t.task_id
+        else:
+            deliver_mail(mail_obj=mail_obj)
         mail_obj.save()
 
     except Exception, e:
+        print e
         logger.error("enqueue_mail(): %s" % str(e))
         map(lambda msg: logger.debug(str(msg)),
             traceback.format_exc().split('\n'))
 
 
 @task
-def deliver_mail(mail_id=None,mail_class='paloma.Message',mail_obj=None,*args,**kwargs):
+def deliver_mail(mail_id=None, mail_class='paloma.Message',
+                 mail_obj=None,
+                 *args, **kwargs):
     ''' send actual mail
 
     .. todo::
@@ -272,21 +278,26 @@ def deliver_mail(mail_id=None,mail_class='paloma.Message',mail_obj=None,*args,**
     '''
     try:
         msg = mail_obj or get_model(mail_class).objects.get(id=mail_id)
-        #:TODO: check mail status. If already "SENDING" or "CANCELD", don't send
+
+        # TODO: check mail status.
+        #       If already "SENDING" or "CANCELD", don't send
         #       check schedue status. If already "CANCELD", don't send
-        send_mail(msg.subject,     #:TODO: Message should have rendered subject
-                  msg.text,
-                  msg.from_address , #:TODO: Owner "symbol" to be defined and compose from address
-                  msg.recipients,
-                  return_path = msg.return_path,  #: RETRUN-PATH
-                  message_id = msg.mail_message_id,     #: MESSSAGE-ID
-                  model_class= str(msg._meta),          #: for replay model class in logging
-            )
+
+        send_mail(
+            msg.subject,
+            msg.text,
+            msg.from_address,
+            msg.recipients,
+            return_path=msg.return_path,
+            message_id=msg.mail_message_id,
+            model_class=str(msg._meta),
+        )
         #:TODO: change the status
 
-    except Exception,e:
+    except Exception, e:
         logger.error("send_mail(): %s" % str(e))
-        map(lambda msg:  logger.debug( str(msg)), traceback.format_exc().split('\n') )
+        map(lambda msg: logger.debug(str(msg)),
+            traceback.format_exc().split('\n'))
         #:TODO:
         #   - error mail to Message
         #   - change status of Message

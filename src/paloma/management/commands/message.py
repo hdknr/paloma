@@ -45,10 +45,16 @@ class Command(GenericCommand):
                                                    name, params=options)
         print "create message id=", msg.id
 
-    def handle_enqueue(self, id, time, *args, **options):
+    def handle_enqueue(self, id, time, async=True, *args, **options):
+        print "@@@ enqueuing message id=", id, time
         msg = Message.objects.get(id=id)
+
+        if async in ['False', False]:
+            async = False
+
         if time is None:
-            enqueue_mail(mail_obj=msg)
+            enqueue_mail(mail_obj=msg, async=async)
+            return
 
         if type(time) == str:
             m = re.search(r"^(?P<number>\d+)(?P<unit>[smh])$", time)
