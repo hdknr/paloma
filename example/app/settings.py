@@ -11,10 +11,10 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite3',
-        'USER': '',
-        'PASSWORD': '',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'paloma_sample',
+        'USER': 'paloma_sample',
+        'PASSWORD': 'paloma_sample',
         'HOST': '',
         'PORT': '',
     }

@@ -418,22 +418,25 @@ class Member(models.Model):
         verbose_name = _(u'Member')
         verbose_name_plural = _(u'Members')
 
+
 class Membership(models.Model):
-    member = models.ForeignKey(Member, verbose_name=_(u'Member') )
-    ''' Member '''
-    circle = models.ForeignKey(Circle, verbose_name=_(u'Circle') )
-    ''' Circle'''
+    member = models.ForeignKey(Member, verbose_name=_(u'Member'))
+    ''' Member ( :ref:`paloma.models.Member` ) '''
+    circle = models.ForeignKey(Circle, verbose_name=_(u'Circle'))
+    ''' Circle ( :ref:`paloma.models.Circle` )'''
 
-    is_admin = models.BooleanField(_(u'Is Circle Admin'),default=False)
+    is_admin = models.BooleanField(_(u'Is Circle Admin'), default=False)
 
-    is_admitted= models.BooleanField(_(u'Is Membership Admitted'),
-                            default=False,help_text=_(u'Is Membership Admitted Help') )
+    is_admitted = models.BooleanField(
+        _(u'Is Membership Admitted'),
+        default=False,
+        help_text=_(u'Is Membership Admitted Help'))
     ''' Member must be admitted by a Circle Admin to has a Membership '''
 
     def is_member_active(self):
         return self.member.is_active
 
-    is_member_active.short_description=u"Is Member Active"
+    is_member_active.short_description = u"Is Member Active"
 
     def is_user_active(self):
         return self.member.user.is_active
@@ -644,39 +647,46 @@ class Message(models.Model):
                                        db_index=True, unique=True)
     ''' Mesage-ID header - 'Message-ID: <local-part "@" domain>' '''
 
-    template = models.ForeignKey(Template,verbose_name=u'Template',
-                    null=True, on_delete=models.SET_NULL )
+    template = models.ForeignKey(Template, verbose_name=u'Template',
+                                 null=True, on_delete=models.SET_NULL)
     ''' Message Template '''
 
-    member =  models.ForeignKey(Member,verbose_name=u'Member',
-                    null=True,default=None,blank=True,on_delete=models.SET_NULL )
+    member = models.ForeignKey(Member, verbose_name=u'Member',
+                               null=True, default=None, blank=True,
+                               on_delete=models.SET_NULL)
     ''' Recipient Member (member.circle is Sender)'''
 
-    circle=  models.ForeignKey(Circle,verbose_name=u'Circle',
-                    null=True,default=None,on_delete=models.SET_NULL )
+    circle = models.ForeignKey(Circle, verbose_name=u'Circle',
+                               null=True, default=None,
+                               on_delete=models.SET_NULL)
     ''' Target Circle ( if None, Site's default circle is used.)'''
 
-    recipient =models.EmailField(u'recipient',max_length=50,default=None,blank=True,null=True)
+    recipient = models.EmailField(u'recipient', max_length=50,
+                                  default=None, blank=True, null=True)
     ''' Recipient  (for non-Member )'''
 
-    subject =  models.TextField(u'Message Subject',default=None,blank=True,null=True)
+    subject = models.TextField(u'Message Subject', default=None,
+                               blank=True, null=True)
     ''' Message Subject '''
 
     text = models.TextField(_(u'Message Text'), default=None,
                             blank=True, null=True)
     ''' Message text '''
 
-    status=models.CharField(u'Status',max_length=50,default=None,blank=True,null=True)
+    status = models.CharField(u'Status', max_length=50,
+                              default=None, blank=True, null=True)
     ''' SMTP Status '''
 
-    task_id= models.CharField(u'Task ID',max_length=40,default=None,null=True,blank=True,)
+    task_id = models.CharField(u'Task ID', max_length=40,
+                               default=None, null=True, blank=True, )
     ''' Task ID  '''
 
-    created = models.DateTimeField(_(u'Created'),auto_now_add=True)
-    updated = models.DateTimeField(_(u'Updated'),auto_now=True)
-    smtped  = models.DateTimeField(_(u'SMTP Time'),default=None,blank=True,null=True)
+    created = models.DateTimeField(_(u'Created'), auto_now_add=True)
+    updated = models.DateTimeField(_(u'Updated'), auto_now=True)
+    smtped = models.DateTimeField(_(u'SMTP Time'),
+                                  default=None, blank=True, null=True)
 
-    parameters = JSONField(blank=True, null=True, evaluate_formfield=True,)        #: dict
+    parameters = JSONField(blank=True, null=True, evaluate_formfield=True,)
     ''' extra parameters '''
 
     _context_cache = None

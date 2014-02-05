@@ -17,7 +17,6 @@ Contents:
     enroll
     models
     backends
-    foods    
     terms
 
 Indices and tables

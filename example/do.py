@@ -14,5 +14,8 @@ if __name__ == "__main__":
     from django.core.management import execute_from_command_line
 
     from django.conf import settings
-    settings.INSTALLED_APPS = settings.INSTALLED_APPS + ('djado',)
+    settings.INSTALLED_APPS = settings.INSTALLED_APPS + (
+        'djado',
+        'django_extensions',
+    )
     execute_from_command_line(sys.argv)
