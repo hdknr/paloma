@@ -72,7 +72,7 @@ class GenericCommand(BaseCommand):
             action='store',
             dest='async',
             default=True,
-            help=u'encoding'),
+            help=u'Asynchronos Execution'),
 
     )
     ''' Command Option '''
