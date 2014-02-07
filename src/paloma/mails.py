@@ -2,11 +2,16 @@
 
 #from django.core.mail import send_mail
 from email import message_from_file
+from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
 #
 from django.core.mail import get_connection
 from django.core.mail.message import (
     EmailMessage,
 )
+
+import logging
+logger = logging.getLogger('paloma')
 
 
 def send_mail_simple(subject, text, addr_from,  addr_to):
@@ -46,3 +51,6 @@ def send_mail(subject, message, from_email, recipient_list,
     msg.extended = kwargs
 
     msg.send()
+    logger.debug(
+        _('mails.send_mail:%s: sent to %s from %s') % (
+            settings.EMAIL_BACKEND, str(recipient_list), str(from_email)))

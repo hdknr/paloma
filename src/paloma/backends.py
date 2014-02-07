@@ -5,6 +5,7 @@
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.backends.smtp import EmailBackend as DjangoEmailBackend
 from django.core.mail.message import sanitize_address
+from django.utils.translation import ugettext_lazy as _
 
 from email.utils import parseaddr
 
@@ -26,6 +27,7 @@ class PalomaEmailBackend(BaseEmailBackend):
 
             - This implementation delegates STMP task to Celery worker.
         '''
+        logger.debug(_('PalomaEmailBackend is used to send a message.'))
         from tasks import send_email
         results = []
         for msg in email_messages:
@@ -45,13 +47,14 @@ class JournalEmailBackend(BaseEmailBackend):
             :param email_messages:
                 list of django.core.mail.messages.EmailMessage instance
 
-            - https://github.com/django/django/blob/master/django/core/mail/message.py
+            - https://github.com/django
+              /django/blob/master/django/core/mail/message.py
 
         .. todo::
             - DO ERROR CHECK!!!!
             - DO ERROR TRACE!!!!
         '''
-
+        logger.debug(_('JournalEmailBackend is used to send a message.'))
         from tasks import journalize
         try:
             sender = parseaddr(email_messages[0].from_email)[1]
@@ -102,6 +105,7 @@ class SmtpEmailBackend(DjangoEmailBackend):
                             mail_obj, **extended):
         ''' directly send mail in Python standnard Mail instance
         '''
+        logger.debug(_('SmtpEmailBackend is used to send a message.'))
         #: message_id ->Message-ID
         if extended.has_key('message_id'):
             if mail_obj.has_key('Message-ID'):

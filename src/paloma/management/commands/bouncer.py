@@ -12,7 +12,6 @@ log = logging.getLogger('paloma')
 class Command(GenericCommand):
     ''' bouncer
     '''
-
     option_list = GenericCommand.option_list + ()
 
     def handle_test(self, *args, **options):
@@ -24,6 +23,7 @@ class Command(GenericCommand):
 
     def handle_main(self, *args, **options):
         ''' main '''
+
         import sys
         if sys.stdin.isatty():
             #: no stdin

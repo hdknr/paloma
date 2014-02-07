@@ -1,14 +1,14 @@
 from django.conf import settings
 from django.core.mail import get_connection
-from django.utils.timezone import datetime ,now
-from django.template import Template,Context
+from django.utils.timezone import now
 from django.db.models.loading import get_model as django_get_model
+from django.utils.translation import ugettext_lazy as _
 
-get_model = lambda p : django_get_model( *(p +'.').split('.')[:2] )
+get_model = lambda p: django_get_model(*(p + '.').split('.')[:2])
 #: TODO: care of number of dots is larger then 1.
 
 
-from celery import current_task,app
+from celery import current_task, app
 from celery.utils.log import get_task_logger
 from celery.task import task
 logger = get_task_logger('paloma')
@@ -27,7 +27,7 @@ from models import (
 )
 from mails import send_mail
 from actions import process_action
-from utils import class_path,make_eta
+from utils import class_path, make_eta
 
 CONFIG = getattr(settings, 'PALOMA_EMAIL_TASK_CONFIG', {})
 
@@ -35,15 +35,18 @@ CONFIG = getattr(settings, 'PALOMA_EMAIL_TASK_CONFIG', {})
 BACKEND = getattr(settings, 'SMTP_EMAIL_BACKEND',
                   'django.core.mail.backends.smtp.EmailBackend')
 
-@task(serializer='pickle')          #: An EmailMessage object MUST be pickled.
+
+@task(serializer='pickle')
 def send_email(message, **kwargs):
     ''' message : django EmailMessage
     '''
+    print "@@@@@ sending mail", BACKEND
     logger = current_task.get_logger()
     try:
         conn = get_connection(backend=BACKEND)
         result = conn.send_messages([message])
-        logger.debug("tasks.send_email:Successfully sent email message to %r.", message.to)
+        logger.debug("tasks.send_email:Successfully sent email message to %r.",
+                     message.to)
         return result
     except Exception, e:
         # catching all exceptions b/c it could be any number of things
@@ -158,36 +161,45 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
 
     return journal and journal.id
 
+
 @task
-def process_journal(journal_id=None,*args,**kwargs):
+def process_journal(journal_id=None, *args, **kwargs):
     """ main bounce woker
     """
-    logger.debug("paloma.tasks.process_journal:%s" % str(journal_id))
+    logger.debug(_(u"Processing Journal %s Backend") % (
+        str(journal_id)), settings.SMTP_EMAIL_BACKEND,
+    )
     try:
-        journal = Journal.objects.get(id = journal_id )
-    except Exception,e:
-        _traceback("task.process_journal",traceback.format_exc())
+        journal = Journal.objects.get(id=journal_id)
+    except Exception:
+        _traceback("task.process_journal", traceback.format_exc())
         return
 
-    if journal.is_jailed == True:
+    if journal.is_jailed is True:
         logger.debug("task.process_journal: this message is a jailed message.")
         return
 
     #:Error Mail Handler
-    if process_error_mail(journal.recipient,journal.sender,journal.id):
+    if process_error_mail(journal.recipient, journal.sender, journal.id):
         logger.debug("task.process_journal:no error")
         return
 
     #: actions
-    if not process_action(journal.sender, journal.recipient,journal) :
-        logger.debug("task.process_journal:deleting this journal because no action is defined in the application.")
-        journal.delete()        #: delete ?????
+    if not process_action(journal.sender, journal.recipient, journal):
+        logger.warn(_(u'No Action for Journal from=%s to=%s') % (
+            journal.sender, journal.recipient,
+        ))
+        # "task.process_journal:deleting this journal
+        #  because no action is defined in the application.")
+        journal.delete()
+        # delete  TODO: provide delete flag and set True, and delete later.
 
     logger.debug("paloma.tasks.process_journal:processed")
 
+
 @task
-def enqueue_publish(sender,publish_id=None,publish=None,
-        member_filter={},member_exclude={}):
+def enqueue_publish(sender, publish_id=None, publish=None,
+                    member_filter={}, member_exclude={}):
     ''' enqueue specifid mail publish, or all publish
 
         - id : Publish identfier
@@ -259,6 +271,9 @@ def enqueue_mail(mail_id=None, mail_class="paloma.Message",
         else:
             deliver_mail(mail_obj=mail_obj)
         mail_obj.save()
+        logger.debug(
+            _('task.enqueue_mail: Message.id=%d is delivered(%s)') % (
+                mail_obj.id, async))
 
     except Exception, e:
         print e
@@ -293,9 +308,14 @@ def deliver_mail(mail_id=None, mail_class='paloma.Message',
             model_class=str(msg._meta),
         )
         #:TODO: change the status
+        logger.debug(_('tasks.deliver_mail'
+                       ':successfully delivered'
+                       'Message.id = %d') % (msg.id))
 
     except Exception, e:
-        logger.error("send_mail(): %s" % str(e))
+        logger.error("deliver_mail: %s" % str(e))
+        logger.error(
+            "mail_obj = %s mail_id = %s" % (str(mail_obj), mail_id))
         map(lambda msg: logger.debug(str(msg)),
             traceback.format_exc().split('\n'))
         #:TODO:
@@ -309,8 +329,10 @@ def send_templated_message(member_or_address, template_name, params,
     msg = Message.objects.create_from_template(
         member_or_address, template_name, params,
         message_id, circle)
-
     enqueue_mail(mail_obj=msg)
+    logger.debug(
+        _('send_templated_message:Messsage.id=%d id enqueued') % msg.id
+    )
 
 ###############
 

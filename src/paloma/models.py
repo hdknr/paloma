@@ -854,9 +854,9 @@ class Provision(models.Model):
         self.save()
         return membership
 
-    def reset(self,save=False):
-        self.secret= create_auto_secret()
-        self.short_secret= create_auto_short_secret()
+    def reset(self, save=False):
+        self.secret = create_auto_secret()
+        self.short_secret = create_auto_short_secret()
         self.dt_commit = None
         self.dt_expire = expire()
         if save:
@@ -865,34 +865,21 @@ class Provision(models.Model):
     def send_response(self):
         '''  send response mail
         '''
-        from paloma.tasks import enqueue_mail
+        from paloma.tasks import send_templated_message
 
-        template,created =  self.circle.site.template_set.get_or_create(name="provision_%s" % self.status)
-        if created:
-            template.subject = "Response for %s" % self.status
-            template.text = """
-URL :
-    {{ provision.url  }}
-
-Long Password :
-    {{ provision.secret }}
-
-Short Password:
-    {{ provision.short_secret}}}
-"""
-            template.save()
-
-        mail ,created= Message.objects.get_or_create(
-                                mail_message_id = u"%s-up-%d@%s" % (self.circle.symbol,
-                                                                    self.id,
-                                                                    self.circle.site.domain),
-                                template= template,
-                                circle=self.circle,
-                                recipient = ( self.member and self.member.address ) or self.prospect  )
-        mail.set_status()
-        mail.render(provision = self)
-
-        enqueue_mail(mail_obj=mail)
+        mail_message_id = u"%s-up-%d@%s" % (self.circle.symbol,
+                                            self.id,
+                                            self.circle.site.domain)
+        name = "provision_%s" % self.status
+        recipient = self.member and self.member.address or self.prospect
+        send_templated_message(
+            recipient,
+            name,
+            params={'provision': self},
+            message_id=mail_message_id,
+        )
+        logger.debug(_('Provision %s is sent for %s') % (
+            name, str(recipient)))
 
     class Meta:
         verbose_name = _('Provision')

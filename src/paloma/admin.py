@@ -8,7 +8,7 @@ from django.forms import ModelForm
 from django.core.urlresolvers import reverse
 
 from models import *
-from tasks import apply_publish
+from tasks import apply_publish, deliver_mail
 
 
 def link_to_relation(self, obj, field=""):
@@ -201,13 +201,29 @@ class TemplateAdmin(admin.ModelAdmin):
 admin.site.register(Template,TemplateAdmin)
 
 ### Message
+
+
+def send_message(modeladmin, request, queryset):
+    if queryset.model is not Message:
+        return
+
+    for message in queryset.filter():
+        deliver_mail(mail_obj=message)  # Sync
+
+send_message.short_description = _('Send Message')
+
+
 class MessageAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Message._meta.fields ])
+    list_display = tuple([f.name for f in Message._meta.fields])
     date_hierarchy = 'created'
     search_fields = ('mail_message_id',)
-admin.site.register(Message,MessageAdmin)
+    actions = [send_message, ]
+admin.site.register(Message, MessageAdmin)
 
 ### Publication
+
+
+
 class PublicationAdmin(admin.ModelAdmin):
     list_display=('id','publish_link','message_link','message_created')
     list_filter=('publish',)
