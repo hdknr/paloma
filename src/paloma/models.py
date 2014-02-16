@@ -210,80 +210,89 @@ class Template(models.Model):
                             max_length=100, db_index=True,)
     ''' Notice Name'''
 
-    subject= models.CharField(_(u'Template Subject'),max_length=100 ,default='',)
+    subject = models.CharField(
+        _(u'Template Subject'),
+        max_length=100, default='',)
     ''' Subject '''
 
-    text =  models.TextField(_(u'Template Text'),max_length=100 ,default='',)
+    text = models.TextField(_(u'Template Text'),
+                            max_length=100, default='',)
     ''' Text '''
 
     objects = TemplateManager()
 
     @classmethod
-    def get_default_template(cls,name='DEFAULT_TEMPLATE',site=None):
+    def get_default_template(cls, name='DEFAULT_TEMPLATE', site=None):
         site = site or Site.app_site()
-        return Template.objects.get_or_create(site=site,name=name,)[0]
+        return Template.objects.get_or_create(site=site, name=name,)[0]
 
-    def render(self,*args,**kwargs):
+    def render(self, *args, **kwargs):
         '''
             :param kwargs: Context dictionary
         '''
         return tuple([template.Template(t).render(template.Context(kwargs))
-                for t in [self.subject,self.text] ])
+                      for t in [self.subject, self.text]])
 
     def __unicode__(self):
         return self.name
 
     class Meta:
-        unique_together = ( ('site','name') ,)
+        unique_together = (('site', 'name'),)
         verbose_name = _(u'Template')
         verbose_name_plural = _(u'Templates')
 
 
 class Targetting(models.Model):
     '''  '''
-    site= models.ForeignKey(Site,verbose_name=u'Owner Site' )
+    site = models.ForeignKey(Site, verbose_name=_(u'Owner Site'))
     ''' Owner Site'''
 
-    targetter_content_type = models.ForeignKey(ContentType,related_name="targetter")
+    targetter_content_type = models.ForeignKey(ContentType,
+                                               related_name="targetter")
     ''' targetter model class'''
     targetter_object_id = models.PositiveIntegerField()
     ''' tragetter object id '''
-    targetter = generic.GenericForeignKey('targetter_content_type', 'targetter_object_id')
+    targetter = generic.GenericForeignKey('targetter_content_type',
+                                          'targetter_object_id')
     ''' targgetter instance '''
 
-    mediator_content_type = models.ForeignKey(ContentType,related_name="mediator")
+    mediator_content_type = models.ForeignKey(ContentType,
+                                              related_name="mediator")
     ''' mediator model class'''
     mediator_object_id = models.PositiveIntegerField()
     ''' mediator object id '''
-    mediator= generic.GenericForeignKey('mediator_content_type', 'mediator_object_id')
+    mediator = generic.GenericForeignKey('mediator_content_type',
+                                         'mediator_object_id')
     ''' mediator instance '''
 
     def __unicode__(self):
         return self.targetter.__unicode__()
 
-################################################################################
+
 class CircleManager(models.Manager):
-    def find_for_domain(self,domain,symbol=None):
-        q= { 'site__domain' : domain }
-        if symbol == None or symbol=='':
+
+    def find_for_domain(self, domain, symbol=None):
+        q = {'site__domain': domain}
+        if symbol is None or symbol == '':
             q['is_default'] = True
         else:
             q['symbol'] = symbol
         return self.get(**q)
 
-    def accessible_list(self,user):
+    def accessible_list(self, user):
         return self.filter(
-                Q(membership__member__user=user )| Q(is_secret = False )
-            ).distinct()
+            Q(membership__member__user=user) | Q(is_secret=False)
+        ).distinct()
 
-    def of_user(self,user ):
-        return self.filter(membership__member__user = user)
+    def of_user(self, user):
+        return self.filter(membership__member__user=user)
 
-    def of_user_exclusive(self,user ):
-        return self.exclude(membership__member__user = user)
+    def of_user_exclusive(self, user):
+        return self.exclude(membership__member__user=user)
 
-    def of_admin(self,user ):
-        return self.filter(membership__member__user = user,membership__is_admin=True)
+    def of_admin(self, user):
+        return self.filter(membership__member__user=user,
+                           membership__is_admin=True)
 
 
 class Circle(models.Model):
@@ -418,33 +427,34 @@ class Member(models.Model):
 
         - a system user can have multiple personality
     '''
-    user= models.ForeignKey(User, verbose_name=_(u'System User') )
+    user = models.ForeignKey(User, verbose_name=_(u'System User'))
     ''' System User '''
 
-    address = models.CharField(_(u'Forward address'),max_length=100 ,unique=True)
+    address = models.CharField(_(u'Forward address'),
+                               max_length=100, unique=True)
     ''' Email Address
     '''
-    is_active = models.BooleanField(_(u'Actaive status'),default=False )
+    is_active = models.BooleanField(_(u'Actaive status'), default=False)
     ''' Active Status '''
 
-    bounces = models.IntegerField(_(u'Bounce counts'),default=0)
+    bounces = models.IntegerField(_(u'Bounce counts'), default=0)
     ''' Bounce count'''
 
-    circles= models.ManyToManyField(Circle,
-                through = 'Membership',
-                verbose_name=u'Opt-in Circle' )
+    circles = models.ManyToManyField(Circle,
+                                     through='Membership',
+                                     verbose_name=_(u'Opt-in Circle'))
     ''' Opt-In Circles'''
 
     def __unicode__(self):
-       return "%s(%s)"% (
+        return "%s(%s)" % (
             self.user.__unicode__() if self.user else "unbound user",
             self.address if self.address else "not registered",
         )
 
-    def reset_password(self,active=False):
+    def reset_password(self, active=False):
         ''' reset password '''
         newpass = User.objects.make_random_password()
-        self.user.set_password( newpass )
+        self.user.set_password(newpass)
         self.user.is_active = active
         self.user.save()
         return newpass
@@ -510,75 +520,91 @@ PUBLISH_STATUS = (
     ('finished', 'finished'),
     ('canceled', 'canceled'),)
 
+
 class Publish(models.Model):
     ''' Message Delivery Publish'''
 
-    site = models.ForeignKey(Site,verbose_name=_(u'Site'), )
+    site = models.ForeignKey(Site, verbose_name=_(u'Site'),)
     ''' Site '''
 
-    publisher = models.ForeignKey(User, verbose_name=_(u'Publisher') )
+    publisher = models.ForeignKey(User, verbose_name=_(u'Publisher'))
     ''' publisher '''
 
-    messages= models.ManyToManyField('Message',through="Publication",
-                                        verbose_name =_("Messages"),
-                                        related_name="message_set",)
+    messages = models.ManyToManyField('Message',
+                                      through="Publication",
+                                      verbose_name=_("Messages"),
+                                      related_name="message_set",)
 
-    subject= models.CharField(_(u'Subject'),max_length=101 ,)
+    subject = models.CharField(_(u'Subject'), max_length=101,)
     ''' Subject '''
 
-    text =  models.TextField(_(u'Text'),max_length=100 ,)
+    text = models.TextField(_(u'Text'), max_length=100,)
     ''' Text '''
 
-    circles= models.ManyToManyField(Circle,verbose_name=_(u'Target Circles') )
+    circles = models.ManyToManyField(Circle, verbose_name=_(u'Target Circles'))
     ''' Circle'''
 
-    task_id= models.CharField(_(u'Task ID'),max_length=40,default=None,null=True,blank=True,)
+    task_id = models.CharField(_(u'Task ID'),
+                               max_length=40, default=None,
+                               null=True, blank=True,)
     ''' Task ID  '''
 
-    status= models.CharField(_(u"Publish Status"), max_length=24,db_index=True,
-                                help_text=_('Publish Status Help'),
-                                default="pending", choices=PUBLISH_STATUS)
+    status = models.CharField(_(u"Publish Status"), max_length=24,
+                              db_index=True,
+                              help_text=_('Publish Status Help'),
+                              default="pending", choices=PUBLISH_STATUS)
 
-    dt_start =  models.DateTimeField(_(u'Time to Send')  ,help_text=_(u'Time to Send Help'),
-                            null=True,blank=True,default=now )
+    dt_start = models.DateTimeField(
+        _(u'Time to Send'),
+        help_text=_(u'Time to Send Help'),
+        null=True, blank=True, default=now)
     ''' Stat datetime to send'''
 
-    activated_at =  models.DateTimeField(_(u'Task Activated Time')  ,help_text=_(u'Task Activated Time Help'),
-                            null=True,blank=True,default=None)
+    activated_at = models.DateTimeField(
+        _(u'Task Activated Time'),
+        help_text=_(u'Task Activated Time Help'),
+        null=True, blank=True, default=None)
     ''' Task Activated Time '''
 
-    forward_to= models.CharField(_(u'Forward address'),max_length=100 ,default=None,null=True,blank=True)
+    forward_to = models.CharField(
+        _(u'Forward address'),
+        max_length=100, default=None, null=True, blank=True)
     ''' Forward address for incomming email '''
 
-    targettings = generic.GenericRelation(Targetting,verbose_name=_('Optional Targetting'),
-                    object_id_field="mediator_object_id",
-                    content_type_field="mediator_content_type")
+    targettings = generic.GenericRelation(
+        Targetting,
+        verbose_name=_('Optional Targetting'),
+        object_id_field="mediator_object_id",
+        content_type_field="mediator_content_type")
 
     def __unicode__(self):
         if self.dt_start:
-            return self.subject + self.dt_start.strftime("(%Y-%m-%d %H:%M:%S) by " + self.publisher.__unicode__())
+            return self.subject + self.dt_start.strftime(
+                "(%Y-%m-%d %H:%M:%S) by " + self.publisher.__unicode__())
         else:
             return self.subject + "(now)"
 
-    def get_context(self,circle,user):
+    def get_context(self, circle, user):
         context = {}
         for ref in self._meta.get_all_related_objects():
             if ref.model in AbstractProfile.__subclasses__():
                 try:
                     context.update(
-                        getattr(self,ref.var_name ).target_context(circle,user)
+                        getattr(self,
+                                ref.var_name).target_context(circle, user)
                     )
-                except Exception,e:
+                except Exception:
                     pass
         return context
 
-    def target_members_for_user(self,user):
+    def target_members_for_user(self, user):
         return Member.objects.filter(
-                    membership__circle__in = self.circles.all(),
-                    user=user )
+            membership__circle__in=self.circles.all(),
+            user=user)
+
     @property
     def is_timeup(self):
-        return self.dt_start == None or self.dt_start <= now()
+        return self.dt_start is None or self.dt_start <= now()
 
     @property
     def task(self):
@@ -588,35 +614,40 @@ class Publish(models.Model):
             return None
 
     class Meta:
-        verbose_name= _(u'Publish')
-        verbose_name_plural= _(u'Publish')
+        verbose_name = _(u'Publish')
+        verbose_name_plural = _(u'Publish')
 
 
 ####
 class JournalManager(models.Manager):
     ''' Message Manager'''
-    def handle_incomming_mail(self,sender,is_jailed,recipient,mssage ):
+    def handle_incomming_mail(self, sender, is_jailed, recipient, mssage):
         '''
             :param mesage: :py:class:`email.Message`
         '''
+        pass
+
 
 class Journal(models.Model):
     ''' Raw Message
 
     '''
-    dt_created=  models.DateTimeField(u'Journaled Datetime'  ,help_text=u'Journaled datetime', auto_now_add=True )
+    dt_created = models.DateTimeField(
+        _(u'Journaled Datetime'),
+        help_text=_(u'Journaled datetime'), auto_now_add=True)
     ''' Journaled Datetime '''
 
-    sender= models.CharField(u'Sender',max_length=100)
+    sender = models.CharField(u'Sender', max_length=100)
     ''' sender '''
 
-    recipient= models.CharField(u'Receipient',max_length=100)
+    recipient = models.CharField(u'Receipient', max_length=100)
     ''' recipient '''
 
-    text = models.TextField(u'Message Text',default=None,blank=True,null=True)
+    text = models.TextField(
+        _(u'Message Text'), default=None, blank=True, null=True)
     ''' Message text '''
 
-    is_jailed = models.BooleanField(u'Jailed Message',default=False )
+    is_jailed = models.BooleanField(_(u'Jailed Message'), default=False)
     ''' Jailed(Reciepient missing emails have been journaled) if true '''
 
     def mailobject(self):
@@ -627,11 +658,11 @@ class Journal(models.Model):
         return message_from_string(self.text)
 
     class Meta:
-        verbose_name=u'Journal'
-        verbose_name_plural=u'Journals'
+        verbose_name = _(u'Journal')
+        verbose_name_plural = _(u'Journals')
 
 try:
-    from rsyslog import Systemevents,Systemeventsproperties
+    from rsyslog import Systemevents, Systemeventsproperties
 except:
     pass
 
@@ -651,26 +682,32 @@ class MessageManager(models.Manager):
             'circle': circle,
         }
 
+        member = None
+        recipient = None
         if type(member_or_recepient) == Member:
-            msg['member'] = member_or_recepient
+            member = member_or_recepient
 
         elif type(member_or_recepient) == Membership:
-            msg['member'] = member_or_recepient.member
-            msg['circle'] = member_or_recepient.circle
+            member = member_or_recepient.member
+            circle = member_or_recepient.circle
         else:   # str
-            msg['recipient'] = member_or_recepient
+            recipient = member_or_recepient
 
         site = msg['circle'].site if msg['circle'] else Site.app_site()
 
         # load tempalte from storage
-        msg['template'] = Template.objects.get_template(site=site,
-                                                        name=template_name)
-        msg['mail_message_id'] = message_id or \
+        template = Template.objects.get_template(site=site,
+                                                 name=template_name)
+        message_id = message_id or \
             "msg-%s-%s@%s" % (template_name, MDT(), site.domain)
 
         #  create
         try:
-            mail, created = self.get_or_create(**msg)
+            mail, created = self.get_or_create(mail_message_id=message_id)
+            mail.cirlce = circle
+            mail.template = template
+            mail.member = member
+            mail.recipient = recipient
             mail.render(**params)
             mail.save()
 
@@ -736,14 +773,14 @@ class Message(models.Model):
 
     objects = MessageManager()
 
-    def __init__(self,*args,**kwargs):
-        super(Message,self).__init__(*args,**kwargs)
-        if self.template == None:
+    def __init__(self, *args, **kwargs):
+        super(Message, self).__init__(*args, **kwargs)
+        if self.template is None:
             self.template = Template.get_default_template()
 
     def __unicode__(self):
         try:
-            return self.template.__unicode__() + str(self.recipients )
+            return self.template.__unicode__() + str(self.recipients)
         except:
             return unicode(self.id)
 
@@ -754,17 +791,11 @@ class Message(models.Model):
         except:
             return None
 
-
-#    def save(self,force_insert=False,force_update=False,*args,**kwargs):
-#        ''' override save() '''
-#
-#        super(Message,self).save(force_insert,force_update,*args,**kwargs)
-
     @property
-    def recipients(self):       #:plural!!!!
-        return [ self.recipient ] if self.recipient else [ self.member.address ]
+    def recipients(self):       # plural!!!!
+        return [self.recipient] if self.recipient else [self.member.address]
 
-    def context(self,**kwargs):
+    def context(self, **kwargs):
         '''  "text" and "subject" are rendered with this context
 
             - member    : paloma.models.Member
@@ -772,21 +803,23 @@ class Message(models.Model):
             - kwargs    : extra parameters
             - [any]     : JSON serialized dict save in "parameters"
         '''
-        ret =  { "member" : self.member, "template": self.template,}
+        ret = {"member": self.member, "template": self.template, }
         ret.update(kwargs)
         if type(self.parameters) == dict:
-            ret.update( self.parameters )
-        return  ret
+            ret.update(self.parameters)
+        return ret
 
-    def render(self,do_save=True,**kwargs):
+    def render(self, do_save=True, **kwargs):
         ''' render for member in circle'''
         if self.template:
             self.text = template.Template(
-                            self.template.text
-                            ).render(template.Context(self.context(**kwargs)))
+                self.template.text
+            ).render(template.Context(self.context(**kwargs)))
+
             self.subject = template.Template(
-                            self.template.subject
-                            ).render(template.Context(self.context(**kwargs)))
+                self.template.subject
+            ).render(template.Context(self.context(**kwargs)))
+
             if do_save:
                 self.save()
 
@@ -798,81 +831,89 @@ class Message(models.Model):
     @property
     def return_path(self):
         ''' default return path '''
-        return make_return_path( {"command" : "msg","message_id" : self.id,
-                                  "domain": self.template.site.domain } )
+        return make_return_path({"command": "msg", "message_id": self.id,
+                                 "domain": self.template.site.domain})
 
-    def set_status(self,status=None,smtped=None,do_save=True):
+    def set_status(self, status=None, smtped=None, do_save=True):
         self.smtped = smtped
         self.status = status
         if do_save:
             self.save()
 
     @classmethod
-    def update_status(cls,msg,**kwargs):
-        for m in cls.objects.filter(mail_message_id = kwargs.get('message_id','')):
-            m.set_status(msg,now())
+    def update_status(cls, msg, **kwargs):
+        for m in cls.objects.filter(
+                mail_message_id=kwargs.get('message_id', '')):
+            m.set_status(msg, now())
+
 
 class Provision(models.Model):
     ''' Account Provision management
     '''
 
-    member= models.OneToOneField(Member,verbose_name=_(u'Member'),
-                    on_delete =models.SET_NULL
-                    ,null=True,default=None,blank=True)
+    member = models.OneToOneField(Member, verbose_name=_(u'Member'),
+                                  on_delete=models.SET_NULL,
+                                  null=True, default=None, blank=True)
     ''' Member'''
 
     status = models.CharField(_(u"Provision Status"),
-                            max_length=24,db_index=True,)
+                              max_length=24, db_index=True,)
     ''' Provisioning  Status'''
 
-    circle = models.ForeignKey(Circle,verbose_name=_(u'Circle'),
-                    null=True,default=None,blank=True,
-                    on_delete=models.SET_NULL)
+    circle = models.ForeignKey(Circle, verbose_name=_(u'Circle'),
+                               null=True, default=None, blank=True,
+                               on_delete=models.SET_NULL)
     ''' Circle'''
 
-    inviter= models.ForeignKey(User,verbose_name=_(u'Inviter'),
-                    null=True,default=None,blank=True,
-                    on_delete=models.SET_NULL)
+    inviter = models.ForeignKey(User, verbose_name=_(u'Inviter'),
+                                null=True, default=None, blank=True,
+                                on_delete=models.SET_NULL)
     ''' Inviter'''
 
-    prospect = models.CharField(_(u'Provision Prospect'),max_length=100,default=None,null=True,blank=True)
+    prospect = models.CharField(_(u'Provision Prospect'),
+                                max_length=100, default=None,
+                                null=True, blank=True)
     ''' Prospect Email Address'''
 
-    secret= models.CharField(_(u'Provision Secret'),max_length=100,default=create_auto_secret,unique=True)
+    secret = models.CharField(_(u'Provision Secret'),
+                              max_length=100,
+                              default=create_auto_secret, unique=True)
     ''' Secret
     '''
-    short_secret= models.CharField(_(u'Provision Short Secret'),max_length=10,default=create_auto_short_secret,
-                unique=True)
+    short_secret = models.CharField(_(u'Provision Short Secret'),
+                                    max_length=10, unique=True,
+                                    default=create_auto_short_secret)
     ''' Short Secret
     '''
 
-    url = models.CharField(_(u'URL for Notice'),max_length=200,default=None,null=True,blank=True)
+    url = models.CharField(_(u'URL for Notice'),
+                           max_length=200, default=None, null=True, blank=True)
     ''' URL for notice '''
 
-    dt_expire =   models.DateTimeField(_(u'Provision Secret Expired')  ,
-                                null=True, blank=True, default=expire,
-                                help_text=u'Secrete Expired', )
+    dt_expire = models.DateTimeField(_(u'Provision Secret Expired'),
+                                     null=True, blank=True, default=expire,
+                                     help_text=u'Secrete Expired', )
     ''' Secrete Expired'''
 
-    dt_try=  models.DateTimeField(_(u'Provision Try Datetime')  ,
-                                null=True, blank=True, default=None,
-                                help_text=u'Try Datetime', )
+    dt_try = models.DateTimeField(_(u'Provision Try Datetime'),
+                                  null=True, blank=True, default=None,
+                                  help_text=u'Try Datetime', )
     ''' Try Datetime'''
 
-    dt_commit=  models.DateTimeField(_(u'Commit Datetime')  ,
-                                null=True, blank=True, default=None,
-                                help_text=u'Commit Datetime', )
+    dt_commit = models.DateTimeField(_(u'Commit Datetime'),
+                                     null=True, blank=True, default=None,
+                                     help_text=u'Commit Datetime', )
     ''' Commit Datetime'''
 
-    def is_open(self,dt_now=None):
+    def is_open(self, dt_now=None):
         ''' check if this is open status or not
         '''
-        dt_now =dt_now if dt_now else now()
+        dt_now = dt_now if dt_now else now()
 
-        return  ( self.dt_commit == None ) and \
-                ( self.dt_expire > dt_now ) and  \
-                ( self.mailbox != None ) and  \
-                ( self.group != None )
+        return (self.dt_commit is None) and \
+               (self.dt_expire > dt_now) and  \
+               (self.mailbox is not None) and  \
+               (self.group is not None)
 
     def close(self):
         ''' close this enroll management
@@ -880,13 +921,14 @@ class Provision(models.Model):
         self.dt_commit = now()
         self.save()
 
-    def provided(self,user,address,is_active=True):
-        self.member = Member.objects.get_or_create(user=user,address=address)[0]
+    def provided(self, user, address, is_active=True):
+        self.member = Member.objects.get_or_create(
+            user=user, address=address)[0]
         self.member.is_active = is_active
         self.member.save()
         if self.circle:
             membership, created = Membership.objects.get_or_create(
-                                    circle=self.circle, member=self.member )
+                circle=self.circle, member=self.member)
             membership.is_admitted = is_active
             membership.save()
 
@@ -931,11 +973,14 @@ class PublicationManager(models.Manager):
 
     def publish(self, publish, circle, member, signature='pub'):
         assert all([publish, circle, member])
+        msgid = "<%s-%d-%d-%d@%s>" % (
+            signature, publish.id,
+            circle.id, member.id, circle.domain)
+
         ret, created = self.get_or_create(
             publish=publish,
             message=Message.objects.get_or_create(
-                mail_message_id="<%s-%d-%d-%d@%s>" % (
-                signature, publish.id, circle.id, member.id, circle.domain),
+                mail_message_id=msgid,
                 template=Template.get_default_template('PUBLICATION'),
                 circle=circle,
                 member=member,)[0]  # (object,created )
@@ -950,37 +995,39 @@ class Publication(models.Model):
     ''' Each Published Item
 
     '''
-    publish = models.ForeignKey(Publish,verbose_name=_(u'Publish') )
+    publish = models.ForeignKey(Publish, verbose_name=_(u'Publish'))
     ''' Mail Schedule'''
 
-    message = models.ForeignKey(Message,verbose_name=_(u'Mail Message') )
+    message = models.ForeignKey(Message, verbose_name=_(u'Mail Message'))
     ''' Message '''
 
     objects = PublicationManager()
 
-    def context(self,**kwargs):
-        ret =  self.message.context(**kwargs)
-        ret['publish']=self.publish
+    def context(self, **kwargs):
+        ret = self.message.context(**kwargs)
+        ret['publish'] = self.publish
 
         #: Circle & Member Targetting
         ret.update(
-          AbstractProfile.target(self.message.circle,self.message.member )
+            AbstractProfile.target(self.message.circle, self.message.member)
         )
 
         #:AdHoc Targetting
         for t in self.publish.targettings.all():
             try:
-                ret.update ( t.target( self ) )
+                ret.update(t.target(self))
             except:
                 pass
-        return  ret
+        return ret
 
-    def render(self,**kwargs):
+    def render(self, **kwargs):
         ''' render for member in circle'''
         self.message.text = template.Template(
-                            self.publish.text
-                            ).render(template.Context(self.context(**kwargs)))
+            self.publish.text
+        ).render(template.Context(self.context(**kwargs)))
+
         self.message.subject = template.Template(
-                            self.publish.subject
-                            ).render(template.Context(self.context(**kwargs)))
+            self.publish.subject
+        ).render(template.Context(self.context(**kwargs)))
+
         self.message.save()
