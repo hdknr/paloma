@@ -52,5 +52,8 @@ def send_mail(subject, message, from_email, recipient_list,
 
     msg.send()
     logger.debug(
-        _('mails.send_mail:%s: sent to %s from %s') % (
-            settings.EMAIL_BACKEND, str(recipient_list), str(from_email)))
+        _('mails.send_mail:%(backend)s: sent to %(to)s from %(from)s') % {
+            "backend": settings.EMAIL_BACKEND,
+            "to": str(recipient_list),
+            "from": str(from_email)}
+    )

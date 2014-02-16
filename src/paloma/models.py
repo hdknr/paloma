@@ -28,41 +28,49 @@ import logging
 logger = logging.getLogger('paloma')
 
 DEFAULT_RETURN_PATH_RE = r"bcmsg-(?P<message_id>\d+)@(?P<domain>.+)"
-DEFAULT_RETURN_PATH_FORMAT ="bcmsg-%(message_id)s@%(domain)s"
-return_path_from_address = lambda address : re.search(DEFAULT_RETURN_PATH_RE,address).groupdict()
-default_return_path= lambda param :  DEFAULT_RETURN_PATH_FORMAT  % param
+DEFAULT_RETURN_PATH_FORMAT = "bcmsg-%(message_id)s@%(domain)s"
+return_path_from_address = lambda address: re.search(DEFAULT_RETURN_PATH_RE,
+                                                     address).groupdict()
+default_return_path = lambda param: DEFAULT_RETURN_PATH_FORMAT % param
 #
 RETURN_PATH_RE = r"^(?P<commnad>.+)-(?P<message_id>\d+)@(?P<domain>.+)"
-RETURN_PATH_FORMAT ="%(command)s-%(message_id)s@%(domain)s"
-read_return_path= lambda address : re.search(RETURN_PATH_RE,address).groupdict()
-make_return_path= lambda param :  RETURN_PATH_FORMAT  % param
+RETURN_PATH_FORMAT = "%(command)s-%(message_id)s@%(domain)s"
+read_return_path = lambda address: re.search(RETURN_PATH_RE,
+                                             address).groupdict()
+make_return_path = lambda param: RETURN_PATH_FORMAT % param
 MDT = lambda t=None: (t or now()).strftime('%m%d%H%M%S')
 #
 #
+
+
 class Domain(models.Model):
     ''' Domain
 
         -  virtual_transport_maps.cf
     '''
-    domain = models.CharField(u'Domain',unique=True, max_length=100,db_index=True, )
+    domain = models.CharField(_(u'Domain'),
+                              unique=True, max_length=100, db_index=True, )
     ''' Domain
 
         -  key for virtual_transport_maps.cf
         -  key and return value for  virtual_domains_maps.cf
     '''
-    description = models.CharField(u'Description',max_length=200,default='')
-    maxquota = models.BigIntegerField(null=True,blank=True,default=None)
-    quota = models.BigIntegerField(null=True,blank=True,default=None)
+    description = models.CharField(_(u'Description'),
+                                   max_length=200, default='')
+    maxquota = models.BigIntegerField(null=True, blank=True, default=None)
+    quota = models.BigIntegerField(null=True, blank=True, default=None)
     transport = models.CharField(max_length=765)
     '''
         - virtual_transport_maps.cf   looks this for specified **domain**.
     '''
 
-    backupmx = models.IntegerField(null=True,blank=True,default=None)
+    backupmx = models.IntegerField(null=True, blank=True, default=None)
     active = models.BooleanField(default=True)
+
     class Meta:
-        verbose_name=u'Domain'
-        verbose_name_plural=u'Domains'
+        verbose_name = _(u'Domain')
+        verbose_name_plural = _(u'Domains')
+
 
 class Alias(models.Model):
     ''' Alias
@@ -75,22 +83,27 @@ class Alias(models.Model):
     '''
         - key for virtual_alias_maps.cf
     '''
-    alias = models.CharField(max_length=100,null=True,default=None,blank=True)
+    alias = models.CharField(max_length=100,
+                             null=True, default=None, blank=True)
     '''
         - value for virtual_alias_maps.cf
     '''
-    mailbox = models.CharField(u'Mailbox',max_length=100,null=True,default=None,blank=True,
-                            help_text=u'specify Maildir path if address is local user ')
+    mailbox = models.CharField(
+        _(u'Mailbox'),
+        max_length=100, null=True, default=None, blank=True,
+        help_text=u'specify Maildir path if address is local user ')
     '''
         - for local usr
         - value for virtual_alias_maps.cf
     '''
     created = models.DateTimeField(default=now)
     modified = models.DateTimeField()
+
     class Meta:
         pass
 
-################################################################################
+##
+
 
 class AbstractProfile(models.Model):
     ''' Profile meta class'''
@@ -100,41 +113,48 @@ class AbstractProfile(models.Model):
         raise NotImplementedError
 
     @classmethod
-    def target(cls,obj,*args,**kwargs):
-        context={}
-        subclasses =  cls.__subclasses__()
+    def target(cls, obj, *args, **kwargs):
+        context = {}
+        subclasses = cls.__subclasses__()
         for ref in obj._meta.get_all_related_objects():
             if ref.model in subclasses:
                 try:
                     context.update(
-                        getattr(obj,ref.var_name ).target_context(*args,**kwargs)
+                        getattr(obj, ref.var_name
+                                ).target_context(*args, **kwargs)
                     )
-                except Exception,e:
+                except Exception:
                     pass
         return context
 
     class Meta:
-        abstract=True
+        abstract = True
+
 
 class Site(models.Model):
     ''' Site
     '''
-    name = models.CharField(u'Owner Site Name',max_length=100 ,db_index=True,unique=True)
+    name = models.CharField(_(u'Owner Site Name'),
+                            max_length=100, db_index=True, unique=True)
     ''' Site Name '''
 
-    domain= models.CharField(u'@Domain',max_length=100 ,default='localhost',
-                        db_index=True,unique=True,null=False,blank=False,)
+    domain = models.CharField(_(u'@Domain'),
+                              max_length=100, default='localhost',
+                              db_index=True, unique=True,
+                              null=False, blank=False, )
     ''' @Domain'''
 
-    url =  models.CharField(u'URL',max_length=150 ,db_index=True,unique=True,default="/",)
+    url = models.CharField(_(u'URL'),
+                           max_length=150, db_index=True,
+                           unique=True, default="/",)
     ''' URL path '''
 
-    operators = models.ManyToManyField(User,verbose_name=u'Site Operators' )
+    operators = models.ManyToManyField(User, verbose_name=_(u'Site Operators'))
     ''' Site Operators '''
 
     @property
     def authority_address(self):
-        return "%s@%s" % ( self.name, self.domain )
+        return "%s@%s" % (self.name, self.domain)
 
     @property
     def default_circle(self):
@@ -142,12 +162,12 @@ class Site(models.Model):
             return self.circle_set.get(is_default=True,)
         except:
             #: if no, get default:
-            name = getattr(settings,'PALOMA_NAME','all')
+            name = getattr(settings, 'PALOMA_NAME', 'all')
             return self.circle_set.get_or_create(
-                            site= self,
-                            name= name,
-                            symbol=name,
-                    )[0]
+                site=self,
+                name=name,
+                symbol=name,
+            )[0]
 
     def __unicode__(self):
         return self.domain
@@ -155,9 +175,9 @@ class Site(models.Model):
     @classmethod
     def app_site(cls):
         return Site.objects.get_or_create(
-                    name=getattr(settings,'PALOMA_NAME','paloma'),
-                    domain=getattr(settings,'PALOMA_DEFAULT_DOMAIN','example.com'),
-                )[0]
+            name=getattr(settings, 'PALOMA_NAME', 'paloma'),
+            domain=getattr(settings, 'PALOMA_DEFAULT_DOMAIN', 'example.com'),
+        )[0]
 
 # Mesage Tempalte
 
@@ -183,10 +203,11 @@ class TemplateManager(models.Manager):
 class Template(models.Model):
     ''' Site Notice Text '''
 
-    site= models.ForeignKey(Site,verbose_name=_(u'Owner Site') )
+    site = models.ForeignKey(Site, verbose_name=_(u'Owner Site'))
     ''' Owner Site'''
 
-    name = models.CharField(_(u'Template Name'),max_length=100,db_index=True,)
+    name = models.CharField(_(u'Template Name'),
+                            max_length=100, db_index=True,)
     ''' Notice Name'''
 
     subject= models.CharField(_(u'Template Subject'),max_length=100 ,default='',)
@@ -264,27 +285,35 @@ class CircleManager(models.Manager):
     def of_admin(self,user ):
         return self.filter(membership__member__user = user,membership__is_admin=True)
 
+
 class Circle(models.Model):
     ''' Circle
     '''
-    site = models.ForeignKey(Site,verbose_name=_(u'Owner Site') )
+    site = models.ForeignKey(Site, verbose_name=_(u'Owner Site'))
     ''' Owner Site'''
 
-    name = models.CharField(_(u'Circle Name'),max_length=100 ,db_index=True )
+    name = models.CharField(_(u'Circle Name'), max_length=100, db_index=True)
     ''' Circle Name '''
 
-    symbol= models.CharField(_(u'Circle Symbol'),max_length=100 ,db_index=True ,
-                    help_text=_(u'Circle Symbol Help Text'),
-                    )
+    symbol = models.CharField(
+        _(u'Circle Symbol'), max_length=100, db_index=True,
+        help_text=_(u'Circle Symbol Help Text'), )
     ''' Symbol '''
 
-    is_default = models.BooleanField(_(u'Is Default Circle'),default=False,help_text=_('Is Default Circle Help'),)
+    is_default = models.BooleanField(
+        _(u'Is Default Circle'), default=False,
+        help_text=_('Is Default Circle Help'),)
     ''' Site's Default Circle or not '''
 
-    is_moderated= models.BooleanField(_(u'Is Moderated Circle'),default=True,help_text=_('Is Moderated Circle Help'),)
-    ''' True: Only operators(Membership.is_admin True) can circulate their message.'''
+    is_moderated = models.BooleanField(
+        _(u'Is Moderated Circle'),
+        default=True, help_text=_('Is Moderated Circle Help'), )
+    ''' True: Only operators(Membership.is_admin True)
+    can circulate their message.'''
 
-    is_secret = models.BooleanField(_(u'Is Secret Circle'),default=False ,help_text=_('Is Secret Circle Help'),)
+    is_secret = models.BooleanField(
+        _(u'Is Secret Circle'),
+        default=False, help_text=_('Is Secret Circle Help'), )
     ''' True: only membership users know its existence '''
 
 #    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
@@ -293,51 +322,56 @@ class Circle(models.Model):
     objects = CircleManager()
 
     def __unicode__(self):
-        return "%s of %s" % ( self.name,  self.site.__unicode__() )
+        return "%s of %s" % (self.name, self.site.__unicode__())
 
     @property
     def main_address(self):
-        return  "%s@%s" % ( self.symbol, self.site.domain)
+        return "%s@%s" % (self.symbol, self.site.domain)
 
     @property
     def domain(self):
         return self.site.domain
 
-    def save(self, **kwargs ):
+    def save(self, **kwargs):
         if self.is_default:
             self.site.circle_set.update(is_default=False)
         else:
-            query = () if self.id == None else (~Q(id=self.id),)
-            if self.site.circle_set.filter(is_default=True,*query).count() <1:
+            query = () if self.id is None else (~Q(id=self.id), )
+            if self.site.circle_set.filter(
+                    is_default=True, *query).count() < 1:
                 self.is_default = True
 
-        super(Circle,self).save(**kwargs)
+        super(Circle, self).save(**kwargs)
 
         #TODO:  add site.operators  to  Circle's Membership(is_admin=True )
 
 #        if self.is_default and self.operators.count() <1 :
 #            #:Default Circle MUST has operators
 #            map(lambda o : self.operators.add(o),self.site.operators.all())
-    def is_admin_user(self,user):
-        return user.is_superuser or self.membership_set.filter(member__user = user, is_admin=True).exists()
 
-    def is_admin(self,user):
-        return user.is_superuser or self.membership_set.filter(member__user = user, is_admin=True).exists()
+    def is_admin_user(self, user):
+        return user.is_superuser or self.membership_set.filter(
+            member__user=user, is_admin=True).exists()
 
-    def is_operator(self,user):
-        return user.is_superuser or self.membership_set.filter(member__user = user, is_admin=True).exists()
+    def is_admin(self, user):
+        return user.is_superuser or self.membership_set.filter(
+            member__user=user, is_admin=True).exists()
 
-    def is_member (self,user):
-        return self.membership_set.filter(member__user = user
-                , is_admitted = True ).exists()
+    def is_operator(self, user):
+        return user.is_superuser or self.membership_set.filter(
+            member__user=user, is_admin=True).exists()
+
+    def is_member(self, user):
+        return self.membership_set.filter(
+            member__user=user, is_admitted=True).exists()
 
     @property
     def memberships(self):
         return self.membership_set.all()
 
-    def membership_for_user(self,user):
+    def membership_for_user(self, user):
         try:
-            return self.membership_set.get(member__user = user )
+            return self.membership_set.get(member__user=user)
         except:
             return None
 
@@ -345,9 +379,11 @@ class Circle(models.Model):
     def memberships_unadmitted(self):
         return self.membership_set.filter(is_admitted=False)
 
-    def are_member(self,users):
+    def are_member(self, users):
         ''' all users are member of this Circle '''
-        return all( map( lambda u : self.membership_set.filter(member__user = u).exists(),users ))
+        return all(
+            map(lambda u: self.membership_set.filter(member__user=u).exists(),
+                users))
 
     def any_admin(self):
         try:
@@ -361,19 +397,21 @@ class Circle(models.Model):
 
         return None
 
-    def add_member(self,member,is_admin=False,is_admitted=False):
-        membership,created = Membership.objects.get_or_create(circle=self,member=member)
+    def add_member(self, member, is_admin=False, is_admitted=False):
+        membership, created = Membership.objects.get_or_create(circle=self,
+                                                               member=member)
         membership.is_admin = is_admin
         membership.is_admitted = is_admitted
         membership.save()
         return membership
 
     class Meta:
-        unique_together = ( ('site','name') ,
-                            ('site','symbol'),
-                        )
+        unique_together = (
+            ('site', 'name'),
+            ('site', 'symbol'),)
         verbose_name = _(u'Circle')
         verbose_name_plural = _(u'Circles')
+
 
 class Member(models.Model):
     ''' Member
@@ -437,38 +475,40 @@ class Membership(models.Model):
     def is_member_active(self):
         return self.member.is_active
 
-    is_member_active.short_description = u"Is Member Active"
+    is_member_active.short_description = _(u"Is Member Active")
 
     def is_user_active(self):
         return self.member.user.is_active
 
-    is_user_active.short_description=u"Is User Active"
+    is_user_active.short_description = _(u"Is User Active")
 
     def user(self):
         return self.member.user
 
     def __unicode__(self):
-        return  "%s -> %s(%s)" %(
-                    self.member.__unicode__() if self.member else "N/A",
-                    self.circle.__unicode__() if self.circle else "N/A",
-                    _(u"Circle Admin") if self.is_admin else _(u"General Member"),)
+        return "%s -> %s(%s)" % (
+            self.member.__unicode__() if self.member else "N/A",
+            self.circle.__unicode__() if self.circle else "N/A",
+            _(u"Circle Admin") if self.is_admin else _(u"General Member"),)
 
     def get_absolute_url(self):
         ''' Django API '''
-        return self.member.user.get_absolute_url() if self.member and self.member.user else None
+        if self.member and self.member.user:
+            return self.member.user.get_absolute_url()
+
+        return None
 
     class Meta:
-        unique_together=(('member','circle',),)
+        unique_together = (('member', 'circle', ), )
         verbose_name = _(u'Membership')
         verbose_name_plural = _(u'Memberships')
 
-PUBLISH_STATUS=(
-                    ('pending','pending'),
-                    ('scheduled','scheduled'),
-                    ('active','active'),
-                    ('finished','finished'),
-                    ('canceled','canceled'),
-                )
+PUBLISH_STATUS = (
+    ('pending', 'pending'),
+    ('scheduled', 'scheduled'),
+    ('active', 'active'),
+    ('finished', 'finished'),
+    ('canceled', 'canceled'),)
 
 class Publish(models.Model):
     ''' Message Delivery Publish'''
@@ -878,30 +918,33 @@ class Provision(models.Model):
             params={'provision': self},
             message_id=mail_message_id,
         )
-        logger.debug(_('Provision %s is sent for %s') % (
-            name, str(recipient)))
+        logger.debug(_('Provision %(provision)s is sent for %(to)s') % {
+            "provision": name,
+            "to": str(recipient)})
 
     class Meta:
         verbose_name = _('Provision')
         verbose_name_plural = _('Provisions')
 
+
 class PublicationManager(models.Manager):
 
-    def publish(self,publish,circle,member,
-                    signature='pub'):
-        assert all([publish,circle,member])
-        ret,created = self.get_or_create(
-                publish = publish,
-                message = Message.objects.get_or_create(
-                            mail_message_id ="<%s-%d-%d-%d@%s>" %(
-                                    signature,publish.id,circle.id,member.id,circle.domain),
-                            template =Template.get_default_template('PUBLICATION'),
-                            circle=circle,
-                            member=member,)[0] #:(object,created )
-            )
+    def publish(self, publish, circle, member, signature='pub'):
+        assert all([publish, circle, member])
+        ret, created = self.get_or_create(
+            publish=publish,
+            message=Message.objects.get_or_create(
+                mail_message_id="<%s-%d-%d-%d@%s>" % (
+                signature, publish.id, circle.id, member.id, circle.domain),
+                template=Template.get_default_template('PUBLICATION'),
+                circle=circle,
+                member=member,)[0]  # (object,created )
+        )
+
         ret.render()
         ret.save()
         return ret
+
 
 class Publication(models.Model):
     ''' Each Published Item

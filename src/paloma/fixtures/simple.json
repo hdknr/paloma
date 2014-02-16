@@ -18,9 +18,6 @@
   "fields": {
     "url": "http://wzy:8000", 
     "domain": "tact.lafoglia.org", 
-    "operators": [
-      1
-    ], 
     "name": "tact"
   }
 },
@@ -50,9 +47,6 @@
   "fields": {
     "is_default": true, 
     "symbol": "tact", 
-    "operators": [
-      1
-    ], 
     "site": 1, 
     "name": "tact"
   }

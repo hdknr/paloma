@@ -16,18 +16,22 @@ logger = get_task_logger('paloma')
 import exceptions
 import traceback
 
-def _traceback(signature,msg):
+
+def _traceback(signature, msg):
     for err in msg.split('\n'):
-        logger.debug( signature +":" + err )
+        logger.debug(signature + ":" + err)
 
 from models import (
-        Publish,Publication,Circle,Member,Message,
-        Journal,
-        default_return_path ,return_path_from_address
+    Publish,
+    Publication,
+    Message,
+    Journal,
+    return_path_from_address
 )
+
 from mails import send_mail
 from actions import process_action
-from utils import class_path, make_eta
+from utils import make_eta
 
 CONFIG = getattr(settings, 'PALOMA_EMAIL_TASK_CONFIG', {})
 
@@ -52,9 +56,12 @@ def send_email(message, **kwargs):
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
         send_email.retry(exc=e)
-        logger.debug( str(e) +  traceback.format_exc().replace('\n','/') )
-        logger.warning("tasks.send_email:Failed to send email message to %r, retrying.",
-                    message.to)
+        logger.debug(str(e) + traceback.format_exc().replace('\n', '/'))
+        logger.warning(
+            "tasks.send_email:Failed to send email message to %r, retrying.",
+            message.to)
+
+
 @task
 def send_email_in_string(return_path,recipients, message_string,**extended):
     '''  message_stiring : string expression of Python email.message.Message object
@@ -139,25 +146,30 @@ def call_task_by_name(mod_name,task_name,*args,**kwargs):
     m = __import__(mod_name,globals(),locals(),["*"])
     return getattr(m,task_name).delay( *args,**kwargs)
 
+
 @task
-def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
+def journalize(sender, recipient, text, is_jailed=False, *args, **kwawrs):
     """ recourde bounce mail
     """
     from models import Journal
 
-    logger.debug('paloma.tasks.journalize:From=%s To %s (jailed=%s)'  % (sender,recipient,is_jailed) )
+    logger.debug(
+        'paloma.tasks.journalize:From=%s To %s (jailed=%s)' % (
+            sender, recipient, is_jailed))
 
     #: First of all, save message to the Journal
-    journal=None
+    journal = None
     try:
-        journal=Journal(
+        journal = Journal(
             sender=sender,
             recipient=recipient,
             is_jailed=is_jailed,
             text=text)
         journal.save()
-    except Exception,e:
-        _traceback("paloma.tasks.journalize:", traceback.format_exc() )
+
+    except Exception:
+        _traceback("paloma.tasks.journalize:",
+                   traceback.format_exc())
 
     return journal and journal.id
 
@@ -166,9 +178,10 @@ def journalize(sender,recipient,text,is_jailed=False,*args,**kwawrs):
 def process_journal(journal_id=None, *args, **kwargs):
     """ main bounce woker
     """
-    logger.debug(_(u"Processing Journal %s Backend") % (
-        str(journal_id)), settings.SMTP_EMAIL_BACKEND,
-    )
+    logger.debug(_(u"Processing Journal %(id)s Backend %(backend)s") % {
+        "id": str(journal_id), "backend": settings.SMTP_EMAIL_BACKEND,
+    })
+
     try:
         journal = Journal.objects.get(id=journal_id)
     except Exception:
@@ -186,9 +199,9 @@ def process_journal(journal_id=None, *args, **kwargs):
 
     #: actions
     if not process_action(journal.sender, journal.recipient, journal):
-        logger.warn(_(u'No Action for Journal from=%s to=%s') % (
-            journal.sender, journal.recipient,
-        ))
+        logger.warn(_(u'No Action for Journal from=%(form)s to=%(to)s') % {
+            "from": journal.sender, "to": journal.recipient,
+        })
         # "task.process_journal:deleting this journal
         #  because no action is defined in the application.")
         journal.delete()
@@ -271,9 +284,10 @@ def enqueue_mail(mail_id=None, mail_class="paloma.Message",
         else:
             deliver_mail(mail_obj=mail_obj)
         mail_obj.save()
+
         logger.debug(
-            _('task.enqueue_mail: Message.id=%d is delivered(%s)') % (
-                mail_obj.id, async))
+            _('task.enqueue_mail: id=%(id)d is delivered (%(async)s)') % {
+                "id": mail_obj.id, "async": async})
 
     except Exception, e:
         print e
