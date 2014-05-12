@@ -760,6 +760,8 @@ class Message(models.Model):
                                default=None, null=True, blank=True, )
     ''' Task ID  '''
 
+    checked = models.BooleanField(_(u'Mail Checked'), default=False, )
+
     created = models.DateTimeField(_(u'Created'), auto_now_add=True)
     updated = models.DateTimeField(_(u'Updated'), auto_now=True)
     smtped = models.DateTimeField(_(u'SMTP Time'),
@@ -845,6 +847,10 @@ class Message(models.Model):
         for m in cls.objects.filter(
                 mail_message_id=kwargs.get('message_id', '')):
             m.set_status(msg, now())
+
+    class Meta:
+        verbose_name = _(u'Message')
+        verbose_name_plural = _(u'Messages')
 
 
 class Provision(models.Model):
