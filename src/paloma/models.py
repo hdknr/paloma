@@ -304,6 +304,9 @@ class Circle(models.Model):
     name = models.CharField(_(u'Circle Name'), max_length=100, db_index=True)
     ''' Circle Name '''
 
+    description = models.TextField(
+        _(u'Circle Description'), null=True, default=None, blank=True)
+
     symbol = models.CharField(
         _(u'Circle Symbol'), max_length=100, db_index=True,
         help_text=_(u'Circle Symbol Help Text'), )
