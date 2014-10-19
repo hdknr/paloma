@@ -196,6 +196,7 @@ class MembershipInline(admin.StackedInline):
 class MemberAdmin(admin.ModelAdmin):
     list_display = ('id', 'user_link', 'address', 'is_active', 'bounces', )
     inlines = [MembershipInline, ]
+    raw_id_fields = ['user', ]
     search_fields = ('address', 'user__username',)
 MemberAdmin.user_link = user_link
 admin.site.register(Member, MemberAdmin)
