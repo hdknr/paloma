@@ -180,6 +180,7 @@ class MembershipAdmin(admin.ModelAdmin):
         'id', 'circle_link', 'member_link', 'user', 'is_admin',
         'is_member_active', 'is_user_active', 'is_admitted', )
     list_filter = ('circle', 'is_admin',)
+    raw_id_fields = ['member', ]
     search_fields = ('member__address', 'member__user__username',)
 MembershipAdmin.member_link = member_link
 MembershipAdmin.circle_link = circle_link
