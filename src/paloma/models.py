@@ -8,6 +8,7 @@ from django.conf import settings
 from django import template  # import Template,Context
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
+from django.utils.deconstruct import deconstructible
 
 from email import message_from_string
 from celery.result import AsyncResult
@@ -29,34 +30,53 @@ logger = logging.getLogger('paloma')
 
 DEFAULT_RETURN_PATH_RE = r"bcmsg-(?P<message_id>\d+)@(?P<domain>.+)"
 DEFAULT_RETURN_PATH_FORMAT = "bcmsg-%(message_id)s@%(domain)s"
-return_path_from_address = lambda address: re.search(DEFAULT_RETURN_PATH_RE,
-                                                     address).groupdict()
-default_return_path = lambda param: DEFAULT_RETURN_PATH_FORMAT % param
-#
+
 RETURN_PATH_RE = r"^(?P<commnad>.+)-(?P<message_id>\d+)@(?P<domain>.+)"
 RETURN_PATH_FORMAT = "%(command)s-%(message_id)s@%(domain)s"
-read_return_path = lambda address: re.search(RETURN_PATH_RE,
-                                             address).groupdict()
-make_return_path = lambda param: RETURN_PATH_FORMAT % param
-MDT = lambda t=None: (t or now()).strftime('%m%d%H%M%S')
-#
-#
 
 
+def return_path_from_address(address):
+    return re.search(
+        DEFAULT_RETURN_PATH_RE,
+        address).groupdict()
+
+
+def default_return_path(param):
+    return DEFAULT_RETURN_PATH_FORMAT % param
+
+
+def read_return_path(address):
+    return re.search(
+        RETURN_PATH_RE,
+        address).groupdict()
+
+
+def make_return_path(param):
+    return RETURN_PATH_FORMAT % param
+
+
+def MDT(t=None):
+    return (t or now()).strftime('%m%d%H%M%S')
+
+
+@deconstructible
 class Domain(models.Model):
     ''' Domain
 
         -  virtual_transport_maps.cf
     '''
-    domain = models.CharField(_(u'Domain'),
-                              unique=True, max_length=100, db_index=True, )
+    domain = models.CharField(
+        _(u'Domain'),
+        unique=True, max_length=100, db_index=True, )
     ''' Domain
 
         -  key for virtual_transport_maps.cf
         -  key and return value for  virtual_domains_maps.cf
     '''
-    description = models.CharField(_(u'Description'),
-                                   max_length=200, default='')
+    description = models.CharField(
+        _(u'Description'),
+        max_length=200, default='')
+
     maxquota = models.BigIntegerField(null=True, blank=True, default=None)
     quota = models.BigIntegerField(null=True, blank=True, default=None)
     transport = models.CharField(max_length=765)
@@ -72,6 +92,7 @@ class Domain(models.Model):
         verbose_name_plural = _(u'Domains')
 
 
+@deconstructible
 class Alias(models.Model):
     ''' Alias
         - local user - maildir
@@ -83,8 +104,9 @@ class Alias(models.Model):
     '''
         - key for virtual_alias_maps.cf
     '''
-    alias = models.CharField(max_length=100,
-                             null=True, default=None, blank=True)
+    alias = models.CharField(
+        max_length=100,
+        null=True, default=None, blank=True)
     '''
         - value for virtual_alias_maps.cf
     '''
@@ -131,6 +153,7 @@ class AbstractProfile(models.Model):
         abstract = True
 
 
+@deconstructible
 class Site(models.Model):
     ''' Site
     '''
@@ -200,14 +223,16 @@ class TemplateManager(models.Manager):
         return ret
 
 
+@deconstructible
 class Template(models.Model):
     ''' Site Notice Text '''
 
     site = models.ForeignKey(Site, verbose_name=_(u'Owner Site'))
     ''' Owner Site'''
 
-    name = models.CharField(_(u'Template Name'),
-                            max_length=100, db_index=True,)
+    name = models.CharField(
+        _(u'Template Name'),
+        max_length=100, db_index=True,)
     ''' Notice Name'''
 
     subject = models.CharField(
@@ -215,8 +240,9 @@ class Template(models.Model):
         max_length=100, default='',)
     ''' Subject '''
 
-    text = models.TextField(_(u'Template Text'),
-                            max_length=100, default='',)
+    text = models.TextField(
+        _(u'Template Text'),
+        max_length=100, default='',)
     ''' Text '''
 
     objects = TemplateManager()
@@ -242,25 +268,33 @@ class Template(models.Model):
         verbose_name_plural = _(u'Templates')
 
 
+@deconstructible
 class Targetting(models.Model):
     '''  '''
     site = models.ForeignKey(Site, verbose_name=_(u'Owner Site'))
     ''' Owner Site'''
 
-    targetter_content_type = models.ForeignKey(ContentType,
-                                               related_name="targetter")
+    targetter_content_type = models.ForeignKey(
+        ContentType,
+        related_name="targetter")
     ''' targetter model class'''
+
     targetter_object_id = models.PositiveIntegerField()
     ''' tragetter object id '''
-    targetter = generic.GenericForeignKey('targetter_content_type',
-                                          'targetter_object_id')
+
+    targetter = generic.GenericForeignKey(
+        'targetter_content_type',
+        'targetter_object_id')
     ''' targgetter instance '''
 
-    mediator_content_type = models.ForeignKey(ContentType,
-                                              related_name="mediator")
+    mediator_content_type = models.ForeignKey(
+        ContentType,
+        related_name="mediator")
     ''' mediator model class'''
+
     mediator_object_id = models.PositiveIntegerField()
     ''' mediator object id '''
+
     mediator = generic.GenericForeignKey('mediator_content_type',
                                          'mediator_object_id')
     ''' mediator instance '''
@@ -295,13 +329,16 @@ class CircleManager(models.Manager):
                            membership__is_admin=True)
 
 
+@deconstructible
 class Circle(models.Model):
     ''' Circle
     '''
-    site = models.ForeignKey(Site, verbose_name=_(u'Owner Site'))
+    site = models.ForeignKey(
+        Site, verbose_name=_(u'Owner Site'))
     ''' Owner Site'''
 
-    name = models.CharField(_(u'Circle Name'), max_length=100, db_index=True)
+    name = models.CharField(
+        _(u'Circle Name'), max_length=100, db_index=True)
     ''' Circle Name '''
 
     description = models.TextField(
@@ -328,9 +365,6 @@ class Circle(models.Model):
         default=False, help_text=_('Is Secret Circle Help'), )
     ''' True: only membership users know its existence '''
 
-#    operators = models.ManyToManyField(User,verbose_name=u'Group Operators' )
-#    ''' Group Operators
-#    '''
     objects = CircleManager()
 
     def __unicode__(self):
@@ -354,12 +388,6 @@ class Circle(models.Model):
                 self.is_default = True
 
         super(Circle, self).save(**kwargs)
-
-        #TODO:  add site.operators  to  Circle's Membership(is_admin=True )
-
-#        if self.is_default and self.operators.count() <1 :
-#            #:Default Circle MUST has operators
-#            map(lambda o : self.operators.add(o),self.site.operators.all())
 
     def is_admin_user(self, user):
         return user.is_superuser or self.membership_set.filter(
@@ -396,6 +424,7 @@ class Circle(models.Model):
         return all(
             map(lambda u: self.membership_set.filter(member__user=u).exists(),
                 users))
+        pass
 
     def any_admin(self):
         try:
@@ -425,6 +454,7 @@ class Circle(models.Model):
         verbose_name_plural = _(u'Circles')
 
 
+@deconstructible
 class Member(models.Model):
     ''' Member
 
@@ -471,6 +501,7 @@ class Member(models.Model):
         verbose_name_plural = _(u'Members')
 
 
+@deconstructible
 class Membership(models.Model):
     member = models.ForeignKey(Member, verbose_name=_(u'Member'))
     ''' Member ( :ref:`paloma.models.Member` ) '''
@@ -524,6 +555,7 @@ PUBLISH_STATUS = (
     ('canceled', 'canceled'),)
 
 
+@deconstructible
 class Publish(models.Model):
     ''' Message Delivery Publish'''
 
@@ -631,6 +663,7 @@ class JournalManager(models.Manager):
         pass
 
 
+@deconstructible
 class Journal(models.Model):
     ''' Raw Message
 
@@ -666,10 +699,13 @@ class Journal(models.Model):
 
 try:
     from rsyslog import Systemevents, Systemeventsproperties
+    Systemevents()
+    Systemeventsproperties()
 except:
     pass
 
 
+@deconstructible
 class MessageManager(models.Manager):
 
     def create_from_template(self,
@@ -722,6 +758,7 @@ class MessageManager(models.Manager):
         return None
 
 
+@deconstructible
 class Message(models.Model):
     ''' Message '''
 
@@ -859,6 +896,7 @@ class Message(models.Model):
         verbose_name_plural = _(u'Messages')
 
 
+@deconstructible
 class Provision(models.Model):
     ''' Account Provision management
     '''
@@ -887,14 +925,17 @@ class Provision(models.Model):
                                 null=True, blank=True)
     ''' Prospect Email Address'''
 
-    secret = models.CharField(_(u'Provision Secret'),
-                              max_length=100,
-                              default=create_auto_secret, unique=True)
+    secret = models.CharField(
+        _(u'Provision Secret'),
+        max_length=100,
+        default='',
+        unique=True)
     ''' Secret
     '''
-    short_secret = models.CharField(_(u'Provision Short Secret'),
-                                    max_length=10, unique=True,
-                                    default=create_auto_short_secret)
+    short_secret = models.CharField(
+        _(u'Provision Short Secret'),
+        max_length=10, unique=True,
+        default='')
     ''' Short Secret
     '''
 
@@ -902,9 +943,11 @@ class Provision(models.Model):
                            max_length=200, default=None, null=True, blank=True)
     ''' URL for notice '''
 
-    dt_expire = models.DateTimeField(_(u'Provision Secret Expired'),
-                                     null=True, blank=True, default=expire,
-                                     help_text=u'Secrete Expired', )
+    dt_expire = models.DateTimeField(
+        _(u'Provision Secret Expired'),
+        null=True, blank=True,
+        default=None,
+        help_text=u'Secrete Expired', )
     ''' Secrete Expired'''
 
     dt_try = models.DateTimeField(_(u'Provision Try Datetime'),
@@ -916,6 +959,13 @@ class Provision(models.Model):
                                      null=True, blank=True, default=None,
                                      help_text=u'Commit Datetime', )
     ''' Commit Datetime'''
+
+    def __init__(self, *args, **kwargs):
+        super(Provision, self).__init__(*args, **kwargs)
+
+        self.dt_expire = self.dt_expire or expire()
+        self.secret = self.secret or create_auto_secret()
+        self.short_secret = self.short_secret or create_auto_short_secret()
 
     def is_open(self, dt_now=None):
         ''' check if this is open status or not
@@ -1003,6 +1053,7 @@ class PublicationManager(models.Manager):
         return ret
 
 
+@deconstructible
 class Publication(models.Model):
     ''' Each Published Item
 
