@@ -7,6 +7,5 @@ kombu
 south
 django_extensions
 pytz
-jsonfield
 python-dateutil
 beautifulsoup4

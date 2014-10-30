@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from json_field import JSONField
 from django.db.models import Q
 from django.db import models
 from django.contrib.auth.models import User
@@ -23,6 +22,7 @@ from utils import (
     expire,
     get_template_source,
 )
+import json
 
 import logging
 logger = logging.getLogger('paloma')
@@ -770,7 +770,8 @@ class Message(models.Model):
     smtped = models.DateTimeField(_(u'SMTP Time'),
                                   default=None, blank=True, null=True)
 
-    parameters = JSONField(blank=True, null=True, evaluate_formfield=True,)
+    parameters = models.TextField(
+        blank=True, null=True, )
     ''' extra parameters '''
 
     _context_cache = None
@@ -810,8 +811,10 @@ class Message(models.Model):
         '''
         ret = {"member": self.member, "template": self.template, }
         ret.update(kwargs)
-        if type(self.parameters) == dict:
-            ret.update(self.parameters)
+        try:
+            ret.update(json.loads(self.parameters))
+        except:
+            pass
         return ret
 
     def render(self, do_save=True, **kwargs):
