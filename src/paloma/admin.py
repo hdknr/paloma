@@ -123,6 +123,7 @@ admin.site.register(Alias, AliasAdmin)
 class SiteAdminForm(ModelForm):
     class Meta:
         model = Site
+        exclude = []
 
 
 class SiteAdmin(admin.ModelAdmin):
