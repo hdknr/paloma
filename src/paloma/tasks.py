@@ -44,7 +44,6 @@ BACKEND = getattr(settings, 'SMTP_EMAIL_BACKEND',
 def send_email(message, **kwargs):
     ''' message : django EmailMessage
     '''
-    print "@@@@@ sending mail", BACKEND
     logger = current_task.get_logger()
     try:
         conn = get_connection(backend=BACKEND)
@@ -63,24 +62,30 @@ def send_email(message, **kwargs):
 
 
 @task
-def send_email_in_string(return_path,recipients, message_string,**extended):
-    '''  message_stiring : string expression of Python email.message.Message object
+def send_email_in_string(return_path, recipients, message_string, **extended):
+    '''  message_stiring :
+            string expression of Python email.message.Message object
     '''
     logger = current_task.get_logger()
     try:
         conn = get_connection(backend=BACKEND)
-        result = conn.send_message_string(return_path,recipients,message_string,**extended)
-        logger.debug("send_email_in_string:Successfully sent email message to %r.", recipients)
+        result = conn.send_message_string(
+            return_path, recipients, message_string, **extended)
+        logger.debug(
+            "send_email_in_string:Successfully sent email message to %r.",
+            recipients)
         return result
     except Exception, e:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
-        logger.debug( traceback.format_exc() )
-        logger.warning("send_email_in_string:Failed to send email message to %r, retrying.",
-                    recipients)
+        logger.debug(traceback.format_exc())
+        logger.warning(
+            "{0}:Failed to send email message to {1}, retrying.".format(
+                'send_email_instring', recipients))
         send_email_in_string.retry(exc=e)
 
-def process_error_mail(recipient,sender,journal_id):
+
+def process_error_mail(recipient, sender, journal_id):
     """ Error Mail Checker and Handler
 
         - return True if mail was processed, owtherwise False
@@ -97,34 +102,37 @@ def process_error_mail(recipient,sender,journal_id):
         - update journal error code or error reseon ?
     """
 
-    if recipient in ['',None]:
+    if recipient in ['', None]:
         #: Simpley Error Mail!
         #: TODO: error marking...
         return True
 
     try:
-        param =  return_path_from_address(recipient)
+        param = return_path_from_address(recipient)
         assert param['message_id'] != ""
         assert param['domain'] != ""
 
         try:
             #: Jourmal mail object
-            journal_msg=Journal.objects.get(id=journal_id).mailobject()
-            error_address= journal_msg.get('X-Failed-Recipients')
+            journal_msg = Journal.objects.get(id=journal_id).mailobject()
+            error_address = journal_msg.get('X-Failed-Recipients')
         except:
             pass
 
         try:
             #: Find message
-            msg = Mail.objects.get(id=int(param['message_id']),
-                    publish__site__domain = param['domain'])
+            msg = Publish.objects.get(
+                id=int(param['message_id']),
+                publish__site__domain=param['domain'])
 
             #:X-Failed-Recipients SHOULD be checked ?
-            assert ( error_address == None or error_address == msg.member.address )
+            assert(
+                error_address is None or
+                error_address == msg.member.address)
 
             #: increment bounce number
             #: this mailbox will be disabled sometimes later.
-            msg.member.bounces = msg.member.bounces+ 1
+            msg.member.bounces = msg.member.bounces + 1
             msg.member.save()
 
             #:
@@ -133,18 +141,19 @@ def process_error_mail(recipient,sender,journal_id):
         except:
             pass
 
-    except exceptions.AttributeError,e:
+    except exceptions.AttributeError:
         #:May be normal address..
         #:Other handler will be called.
         return False
 
     return False
 
-def call_task_by_name(mod_name,task_name,*args,**kwargs):
+
+def call_task_by_name(mod_name, task_name, *args, **kwargs):
     """ call task by name """
 
-    m = __import__(mod_name,globals(),locals(),["*"])
-    return getattr(m,task_name).delay( *args,**kwargs)
+    m = __import__(mod_name, globals(), locals(), ["*"])
+    return getattr(m, task_name).delay(*args, **kwargs)
 
 
 @task
@@ -220,25 +229,29 @@ def enqueue_publish(sender, publish_id=None, publish=None,
     log = current_task.get_logger()
 
     q = [publish]
-    if publish == None:
-        args = {'status': "scheduled",}
+    if publish is None:
+        args = {'status': "scheduled", }
         if publish_id:
             args['id'] = publish_id
         log.debug("specified Publish is = %s" % str(args))
-        q =  Publish.objects.filter(**args)
+        q = Publish.objects.filter(**args)
 
     for publish in q:
-        t=enqueue_mails_for_publish.delay(
-            sender,publish.id ,member_filter,member_exclude) #: Asynchronized Call
+        t = enqueue_mails_for_publish.delay(
+            sender, publish.id,
+            member_filter, member_exclude)  # Asynchronized Call
         publish.status = "active"
         publish.activated_at = now()
         publish.task_id = t.task_id
         publish.save()
 
+
 @task
-def enqueue_mails_for_publish(sender,publish_id,
-            member_filter={}, member_exclude={},
-                signature="pub",async=True):
+def enqueue_mails_for_publish(
+    sender, publish_id,
+    member_filter={}, member_exclude={},
+    signature="pub", async=True
+):
     ''' Enqueu mails for speicifed Publish
 
         :param member_query: dict for query
@@ -248,14 +261,19 @@ def enqueue_mails_for_publish(sender,publish_id,
         - If called asynchronosly, enqueue_mail should be called synchronosly.
     '''
     log = current_task.get_logger()
-    member_exclude.update( {'user':None } )
+    member_exclude.update({'user': None})
     try:
-        publish = Publish.objects.get(id = publish_id )
+        publish = Publish.objects.get(id=publish_id)
         for circle in publish.circles.all():
-            for member in circle.member_set.filter(**member_filter).exclude( **member_exclude ):
-                pub= Publication.objects.publish(publish,circle,member,signature)
-                assert pub.message != None
-                t=enqueue_mail.apply_async((),{'mail_id':pub.message.id,})
+            for member in circle.member_set.filter(
+                    **member_filter).exclude(**member_exclude):
+                pub = Publication.objects.publish(
+                    publish, circle, member, signature)
+
+                assert pub.message is not None
+                t = enqueue_mail.apply_async(
+                    (), {'mail_id': pub.message.id, })
+
 #                if async:
 #                    t=enqueue_mail.delay(mail_id=pub.message.id)
 #                else:
@@ -264,9 +282,9 @@ def enqueue_mails_for_publish(sender,publish_id,
                 pub.message.task_id = t.id
                 pub.message.save()
 
-    except Exception,e:
-        log.error( "enqueue_mails_for_publish():" +  str(e) )
-        log.debug( traceback.format_exc().replace('\n','/') )
+    except Exception, e:
+        log.error("enqueue_mails_for_publish():" + str(e))
+        log.debug(traceback.format_exc().replace('\n', '/'))
 
 
 @task
@@ -350,45 +368,55 @@ def send_templated_message(member_or_address, template_name, params,
 
 ###############
 
-def do_enqueue_publish(publish, right_now=False,*args,**kwargs):
+
+def do_enqueue_publish(publish, right_now=False, *args, **kwargs):
     ''' helper te enqueue_publish
     '''
-    task_args= ("admin",publish.id) + args
+    task_args = ("admin", publish.id) + args
     if right_now or publish.is_timeup:
-        t = enqueue_publish.apply_async( task_args,kwargs ,)
+        t = enqueue_publish.apply_async(task_args, kwargs, )
     else:
-        t = enqueue_publish.apply_async( task_args,kwargs ,
-                eta= make_eta(publish.dt_start) )
+        t = enqueue_publish.apply_async(
+            task_args, kwargs,
+            eta=make_eta(publish.dt_start))
 
-    publish.task_id =t.id
+    publish.task_id = t.id
     publish.save()
+
 
 def do_cancel_publish(publish):
     ''' helper  cancel task'''
-    if publish.task_id != None:
+    if publish.task_id is not None:
         app.current_app().control.revoke(publish.task_id)
+
 
 def apply_publish(publish):
     ''' do something depend on status '''
-    if  publish.status == 'scheduled':
+    if publish.status == 'scheduled':
         do_enqueue_publish(publish)
     elif publish.status == "canceled":
         do_cancel_publish(publish)
 
+
 @task
-def smtp_status(sender,msg,**extended):
+def smtp_status(sender, msg, **extended):
     log = current_task.get_logger()
-    log.debug('tasks.smtp_status:%s:%s:%s' % ( sender, msg,str(extended) ) )
-#     model_class = get_model( *(extended.get('model_class','')+'.').split('.')[:2])
-    model_class = get_model( extended.get('model_class',''))
-    model_class and getattr(model_class,'update_status',lambda *x,**y:None)(msg,**extended)
+    log.debug(
+        'tasks.smtp_status:{0}:{1}:{2}'.format(
+            sender, msg, str(extended)))
+
+    # model_class = get_model(
+    #       *(extended.get('model_class','')+'.').split('.')[:2])
+    model_class = get_model(extended.get('model_class', ''))
+    model_class and getattr(
+        model_class, 'update_status', lambda *x, **y: None)(msg, **extended)
+
 
 @task
-def test(msg="test",*args,**kwargs):
-    t=current_task
-    print "request=",t.request
+def test(msg="test", *args, **kwargs):
+    t = current_task
+    print "request=", t.request
     print dir(t.request)
-    print "is_eager=",t.request.is_eager
-    print "id=",t.request.id
-    print msg, args,kwargs
-
+    print "is_eager=", t.request.is_eager
+    print "id=", t.request.id
+    print msg, args, kwargs
