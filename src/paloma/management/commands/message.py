@@ -69,3 +69,12 @@ class Command(GenericCommand):
 
         enqueue_mail.apply_async((), {'mail_obj': msg},
                                  eta_time=make_eta(time))
+
+    def handle_forward(self, *args, **options):
+        '''　forword message
+
+        '''
+        print ">>>>", args, options
+        if options['id'] and options['id'].isdigit():
+            msg = Message.objects.get(id=options['id'])
+            print msg

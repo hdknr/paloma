@@ -100,13 +100,13 @@ class Alias(models.Model):
 
         - for  virtual_alias_maps.cf
     '''
-    address = models.CharField(unique=True, max_length=100)
+    address = models.CharField(
+        _('Alias Address'), max_length=100)
     '''
         - key for virtual_alias_maps.cf
     '''
     alias = models.CharField(
-        max_length=100,
-        null=True, default=None, blank=True)
+        _('Alias Forward'), max_length=100)
     '''
         - value for virtual_alias_maps.cf
     '''
@@ -118,11 +118,13 @@ class Alias(models.Model):
         - for local usr
         - value for virtual_alias_maps.cf
     '''
-    created = models.DateTimeField(default=now)
-    modified = models.DateTimeField()
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
 
     class Meta:
-        pass
+        verbose_name = _('Alias')
+        verbose_name_plural = _('Alias')
+        unique_together = (('address', 'alias', ), )
 
 ##
 
@@ -696,6 +698,16 @@ class Journal(models.Model):
     class Meta:
         verbose_name = _(u'Journal')
         verbose_name_plural = _(u'Journals')
+
+    def forwards(self):
+        return Alias.objects.filter(address=self.recipient)
+
+    def forward_from(self):
+        return "j-{0}@{1}".format(
+            self.id,
+            self.recipient.split('@')[1],
+        )
+
 
 try:
     from rsyslog import Systemevents, Systemeventsproperties

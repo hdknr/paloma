@@ -69,12 +69,15 @@ def send_email_in_string(return_path, recipients, message_string, **extended):
     logger = current_task.get_logger()
     try:
         conn = get_connection(backend=BACKEND)
+        conn.open()
         result = conn.send_message_string(
             return_path, recipients, message_string, **extended)
+
         logger.debug(
             "send_email_in_string:Successfully sent email message to %r.",
             recipients)
         return result
+
     except Exception, e:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
@@ -330,6 +333,7 @@ def deliver_mail(mail_id=None, mail_class='paloma.Message',
         #       If already "SENDING" or "CANCELD", don't send
         #       check schedue status. If already "CANCELD", don't send
 
+        #  from mails import send_mail
         send_mail(
             msg.subject,
             msg.text,
@@ -339,6 +343,7 @@ def deliver_mail(mail_id=None, mail_class='paloma.Message',
             message_id=msg.mail_message_id,
             model_class=str(msg._meta),
         )
+
         #:TODO: change the status
         logger.debug(_('tasks.deliver_mail'
                        ':successfully delivered'
