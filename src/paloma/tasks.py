@@ -196,6 +196,7 @@ def process_journal(journal_id=None, *args, **kwargs):
 
     try:
         journal = Journal.objects.get(id=journal_id)
+        journal_forward(journal)     # forward mail if Alias exists
     except Exception:
         _traceback("task.process_journal", traceback.format_exc())
         return
@@ -425,3 +426,12 @@ def test(msg="test", *args, **kwargs):
     print "is_eager=", t.request.is_eager
     print "id=", t.request.id
     print msg, args, kwargs
+
+
+def journal_forward(journal):
+    for forward_to in journal.forwards():
+        send_email_in_string(
+            journal.forward_from(),
+            forward_to.alias,
+            journal.text
+        )

@@ -703,7 +703,7 @@ class Journal(models.Model):
         return Alias.objects.filter(address=self.recipient)
 
     def forward_from(self):
-        return "j-{0}@{1}".format(
+        return "jfwd-{0}@{1}".format(
             self.id,
             self.recipient.split('@')[1],
         )

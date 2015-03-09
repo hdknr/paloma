@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from . import GenericCommand
 from ...models import Journal
-from ...tasks import process_journal, send_email_in_string
+from ...tasks import process_journal, journal_forward
 
 
 class Command(GenericCommand):
@@ -31,10 +31,5 @@ class Command(GenericCommand):
 
     def handle_forward(self,  *args, **options):
         if options.get('id', '').isdigit():
-            journal = Journal.objects.get(id=options['id'])
-            for forward_to in journal.forwards():
-                send_email_in_string(
-                    journal.forward_from(),
-                    forward_to.alias,
-                    journal.text
-                )
+            journal_forward(
+                Journal.objects.get(id=options['id']))
