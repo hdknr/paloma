@@ -7,4 +7,5 @@ kombu
 south
 django_extensions
 pytz
--e git+https://github.com/harajuku-tech/celery_workman.git#egg=celery-workman
+python-dateutil
+beautifulsoup4

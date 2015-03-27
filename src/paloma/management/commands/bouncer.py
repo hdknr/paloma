@@ -1,43 +1,51 @@
 # -*- coding: utf-8 -*-
 
 from paloma.management.commands import GenericCommand
-from optparse import make_option
-from datetime import datetime
 
-from django.conf import settings
+from ...tasks import journalize, process_journal
+
+import logging
+import traceback
+log = logging.getLogger('paloma')
+
 
 class Command(GenericCommand):
     ''' bouncer
     '''
+    option_list = GenericCommand.option_list + ()
 
-    option_list = GenericCommand.option_list + ( 
+    def handle_test(self, *args, **options):
+        ''' simple testing '''
+        import uuid
+        msg = "running bouncer:signature=%s" % uuid.uuid1().hex
+        print "logging as:\n", msg
+        log.debug(msg)
 
-        make_option('--async',
-            action='store',
-            dest='async',
-            default=True,
-            help=u'Process asynchronously with message queue'),
-
-        )   
-
-    def handle_main(self,*args,**options):
+    def handle_main(self, *args, **options):
         ''' main '''
-        from paloma import report 
+
         import sys
         if sys.stdin.isatty():
             #: no stdin
-            report('no stdin')
+            log.warn('no stdin')
             return
 
-        is_jailed = options.get('is_jailed',False)
+        is_jailed = options.get('is_jailed', False)
 
-        from paloma.tasks import bounce 
-        #: defualt is async
-        bounce.delay(args[1],args[2],''.join(sys.stdin.read()),is_jailed ) #:message queuing
+        jid = journalize(args[0], args[1],
+                         ''.join(sys.stdin.read()), is_jailed)
+        #:message journalized
 
-    def handle_jail(self,*args,**options):
+        try:
+            log.debug("bouncer.handle_main:process journal =%d" % jid)
+            process_journal.delay(jid)      #: defualt is async
+        except:
+            for err in traceback.format_exc().split('\n'):
+                log.error("bouncer.handle_main:%s" % err)
+
+    def handle_jail(self, *args, **options):
         ''' jail'''
-        from paloma import report 
+        from paloma import report
         report('jailed')
         options['is_jailed'] = True
-        self.handle_main(*args,**options)
+        self.handle_main(*args, **options)

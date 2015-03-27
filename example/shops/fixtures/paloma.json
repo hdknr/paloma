@@ -1,0 +1,14 @@
+[
+{
+  "pk": 1, 
+  "model": "paloma.site", 
+  "fields": {
+    "url": "/", 
+    "domain": "localhost", 
+    "operators": [
+      1
+    ], 
+    "name": "hideki"
+  }
+}
+]

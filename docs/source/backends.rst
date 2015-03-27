@@ -31,15 +31,15 @@ Example
 Email Backends
 ====================================
 
-.. _paloma.models.CeleryEmailBackend:
+.. _paloma.backends.PalomaEmailBackend:
 
-CeleryEmailBackend
+PalomaEmailBackend
 --------------------------------
 
-.. autoclass:: paloma.backends.CeleryEmailBackend
+.. autoclass:: paloma.backends.PalomaEmailBackend
     :members:
 
-.. _paloma.models.JournalEmailBackend:
+.. _paloma.backends.JournalEmailBackend:
 
 JournalEmailBackend
 --------------------------------

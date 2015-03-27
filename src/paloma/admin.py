@@ -1,24 +1,81 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 from django.contrib import admin
+from django.contrib.contenttypes import generic
 from django.conf import settings
 from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _
+from django.forms import ModelForm
+from django.forms.models import BaseInlineFormSet
+from django.core.urlresolvers import reverse
 
-from celery import app
+from models import (
+    Domain,
+    Alias,
+    Site,
+    Template,
+    Targetting,
+    Circle,
+    Member,
+    Membership,
+    Publish,
+    Journal,
+    Message,
+    Provision,
+    Publication,
+)
+from tasks import apply_publish, deliver_mail
 
-from models import *
-from tasks import enqueue_schedule
 
+def link_to_relation(self, obj, field=""):
+    ''' relation field link
+        - self : Admin
+        - obj  : Model Instance
+        - filed : Field Name
+    '''
+    if obj is None:
+        return ""
+
+    fobj = getattr(obj, field, None)
+    if fobj:
+        url = reverse("admin:%s_change" % fobj._meta.db_table,
+                      args=[fobj.id])
+        return '<a href="%s">%s</a>' % (url, fobj.__unicode__())
+
+user_link = lambda self, obj: link_to_relation(self, obj, "user")
+user_link.short_description = _(u"System User")
+user_link.allow_tags = True
+
+member_link = lambda self, obj: link_to_relation(self, obj, "member")
+member_link.short_description = _(u"Member")
+member_link.allow_tags = True
+
+circle_link = lambda self, obj: link_to_relation(self, obj, "circle")
+circle_link.short_description = _(u"Circle")
+circle_link.allow_tags = True
+
+publish_link = lambda self, obj: link_to_relation(self, obj, "publish")
+publish_link.short_description = _(u"Publish")
+publish_link.allow_tags = True
+
+message_link = lambda self, obj: link_to_relation(self, obj, "message")
+message_link.short_description = _(u"Message")
+message_link.allow_tags = True
+
+###
 
 if settings.DEBUG:
     try:
-        from kombu.transport.django.models import Queue as KombuQueue,Message as KombuMessage
-        from djcelery.models import TaskMeta,TaskSetMeta
+        from kombu.transport.django.models import (
+            Queue as KombuQueue,
+            Message as KombuMessage
+        )
+        from djcelery.models import TaskMeta, TaskSetMeta
 
         ### KombuQueue
         class KombuQueueAdmin(admin.ModelAdmin):
-            list_display=tuple([f.name for f in KombuQueue._meta.fields ])
-        admin.site.register(KombuQueue,KombuQueueAdmin)
-        
+            list_display = tuple([f.name for f in KombuQueue._meta.fields])
+        admin.site.register(KombuQueue, KombuQueueAdmin)
+
         ### define __unicode__ to Queue class
         #
         #def __unicode__(self):
@@ -27,112 +84,223 @@ if settings.DEBUG:
 
         ### KombuMessage
         class KombuMessageAdmin(admin.ModelAdmin):
-            list_display=tuple([f.name for f in KombuMessage._meta.fields])
-        admin.site.register(KombuMessage,KombuMessageAdmin)
+            list_display = tuple([f.name for f in KombuMessage._meta.fields])
+        admin.site.register(KombuMessage, KombuMessageAdmin)
 
         ### TaskMeta
         class TaskMetaAdmin(admin.ModelAdmin):
-            list_display=tuple([f.name for f in TaskMeta._meta.fields])
+            list_display = tuple([f.name for f in TaskMeta._meta.fields])
             list_filter = ('status',)
             date_hierarchy = 'date_done'
-        admin.site.register(TaskMeta,TaskMetaAdmin)
-        
+        admin.site.register(TaskMeta, TaskMetaAdmin)
+
         ### TaskSetMeta
         class TaskSetMetaAdmin(admin.ModelAdmin):
-            list_display=tuple([f.name for f in TaskSetMeta._meta.fields])
-        admin.site.register(TaskSetMeta,TaskSetMetaAdmin)
-        
-        
-    except Exception,e:
+            list_display = tuple([f.name for f in TaskSetMeta._meta.fields])
+        admin.site.register(TaskSetMeta, TaskSetMetaAdmin)
+
+    except Exception, e:
         print e
         pass
 
-### Domain 
+### Domain
+
+
 class DomainAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Domain._meta.fields ])
-admin.site.register(Domain,DomainAdmin)
+    list_display = tuple([f.name for f in Domain._meta.fields])
+admin.site.register(Domain, DomainAdmin)
 
-### Alias 
+### Alias
+
+
 class AliasAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Alias._meta.fields ])
-admin.site.register(Alias,AliasAdmin)
+    list_display = tuple([f.name for f in Alias._meta.fields])
+admin.site.register(Alias, AliasAdmin)
 
 
-### Owner 
-class OwnerAdmin(admin.ModelAdmin):
-    list_display=('name','user','domain','forward_to',)
-admin.site.register(Owner,OwnerAdmin)
+#################################################
 
-### Operator 
-class OperatorAdmin(admin.ModelAdmin):
-    list_display=('owner','user', )
-admin.site.register(Operator,OperatorAdmin)
+class SiteAdminForm(ModelForm):
+    class Meta:
+        model = Site
+        exclude = []
 
-### Group 
-class GroupAdmin(admin.ModelAdmin):
-    list_display=('name','owner','symbol','main_address')
-    list_filter=('owner',)
-admin.site.register(Group,GroupAdmin)
 
-### Mailbox 
-class MailboxAdmin(admin.ModelAdmin):
-    list_display=('id', 'user', 'address', 'is_active', 'bounces',)
-admin.site.register(Mailbox,MailboxAdmin)
+class SiteAdmin(admin.ModelAdmin):
+    form = SiteAdminForm
+    list_display = tuple([f.name for f in Site._meta.fields])
 
-### Enroll 
-class EnrollAdmin(admin.ModelAdmin):
-    list_display=('id','enroll_type', 'mailbox','group', 'inviter', 'prospect',
-                    'url','secret','short_secret',
-                    'dt_expire','dt_try', 'dt_commit' )
-    list_filter=('enroll_type',)
-    
-admin.site.register(Enroll,EnrollAdmin)
 
-### Notice 
-class NoticeAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Notice._meta.fields ])
-admin.site.register(Notice,NoticeAdmin)
+admin.site.register(Site, SiteAdmin)
 
-### Schedule 
-class ScheduleAdmin(admin.ModelAdmin):
-    list_display=['status','id', 'owner', 'subject', 'text', 'dt_start', 'forward_to','task']
+### Targetting
+
+
+class TargettingInline(generic.GenericTabularInline):
+    model = Targetting
+    ct_field = 'mediator_content_type'
+    ct_fk_field = 'mediator_object_id'
+
+
+class TargettingAdmin(admin.ModelAdmin):
+    list_display = tuple([f.name for f in Targetting._meta.fields])
+admin.site.register(Targetting, TargettingAdmin)
+
+### Circle
+
+
+class CirlceAdminMembershipForset(BaseInlineFormSet):
+
+    def get_queryset(self):
+        if not hasattr(self, '_queryset'):
+            qs = super(CirlceAdminMembershipForset,
+                       self).get_queryset().filter(is_admin=True)
+            self._queryset = qs
+        return self._queryset
+
+
+class CircleAdminMembershipInline(admin.TabularInline):
+#class CircleAdminMembershipInline(admin.StackedInline):
+    model = Membership
+    formset = CirlceAdminMembershipForset
+    extra = 0
+    raw_id_fields = ['member', ]
+    verbose_name = _('Cicle Administrator')
+    verbose_name_plural = _('Cicle Administrators')
+
+
+class CircleAdmin(admin.ModelAdmin):
+    list_display = tuple([f.name for f in Circle._meta.fields])
+    inlines = [CircleAdminMembershipInline]
+admin.site.register(Circle, CircleAdmin)
+
+
+## Membership
+class MembershipAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'circle_link', 'member_link', 'user', 'is_admin',
+        'is_member_active', 'is_user_active', 'is_admitted', )
+    list_filter = ('circle', 'is_admin',)
+    raw_id_fields = ['member', ]
+    search_fields = ('member__address', 'member__user__username',)
+MembershipAdmin.member_link = member_link
+MembershipAdmin.circle_link = circle_link
+admin.site.register(Membership, MembershipAdmin)
+
+
+class MembershipInline(admin.StackedInline):
+    model = Membership
+    extra = 0
+
+### Member
+
+
+class MemberAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user_link', 'address', 'is_active', 'bounces', )
+    inlines = [MembershipInline, ]
+    raw_id_fields = ['user', ]
+    search_fields = ('address', 'user__username',)
+MemberAdmin.user_link = user_link
+admin.site.register(Member, MemberAdmin)
+
+### Publish
+
+
+class PublishAdmin(admin.ModelAdmin):
+#    list_display=tuple([f.name for f in Publish._meta.fields ])
+    list_display = (
+        'id', 'site', 'publisher', 'subject', 'text',
+        'task_id', 'status', 'dt_start', 'activated_at', )
+
+    inlines = [
+        TargettingInline,
+    ]
+    date_hierarchy = 'dt_start'
 
     def save_model(self, request, obj, form, change):
-        ''' Saving... 
+        ''' Saving...
 
             :param request: request object to view
-            :param obj: Schedule instance
+            :param obj: Publish instance
             :param form: Form instance
             :param change: bool
-        ''' 
-        if 'status' in form.changed_data :
-            if obj.status == 'scheduled':
-                if  obj.dt_start < now() or  ( obj.task != None and obj.task !="")  :
-                    #: Don not save()
-                    return
-                #: create_task
-                t = enqueue_schedule.apply_async(("admin",obj.id),{},eta=obj.dt_start)
-                obj.task =t.id                  
+        '''
+        if all(['status' in form.changed_data,
+               obj.status == 'scheduled',
+               any([obj.dt_start and obj.dt_start < now(),
+                    obj.task_id not in [None, ""], ]),
+                ]):
+            #: do nothing
+            return
 
-            elif obj.status == "canceled":
-                if obj.task != None:
-                    app.current_app().control.revoke(obj.task)
+        super(PublishAdmin, self).save_model(request, obj, form, change)
+        apply_publish(obj)
+admin.site.register(Publish, PublishAdmin)
 
-        super(ScheduleAdmin,self).save_model(request,obj,form,change)
 
-admin.site.register(Schedule,ScheduleAdmin)
-### Message 
-class MessageAdmin(admin.ModelAdmin):
-    list_display=('schedule','mailbox','mail_message_id',)
-admin.site.register(Message,MessageAdmin)
+### Provision
+class ProvisionAdmin(admin.ModelAdmin):
+    list_display = tuple([f.name for f in Provision._meta.fields])
+    search_fields = ('prospect',)
+    raw_id_fields = ('member', )
+admin.site.register(Provision, ProvisionAdmin)
 
-### Journal 
+### Journal
+
+
 class JournalAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in Journal._meta.fields ])
-admin.site.register(Journal,JournalAdmin)
+    list_display = tuple([f.name for f in Journal._meta.fields])
+    date_hierarchy = 'dt_created'
+admin.site.register(Journal, JournalAdmin)
 
-### EmailTask 
-class EmailTaskAdmin(admin.ModelAdmin):
-    list_display=tuple([f.name for f in EmailTask._meta.fields ])
-admin.site.register(EmailTask,EmailTaskAdmin)
+##############
 
+### Template
+
+
+class TemplateAdmin(admin.ModelAdmin):
+    list_display = tuple([f.name for f in Template._meta.fields])
+admin.site.register(Template, TemplateAdmin)
+
+### Message
+
+
+def send_message(modeladmin, request, queryset):
+    if queryset.model is not Message:
+        return
+
+    for message in queryset.filter():
+        deliver_mail(mail_obj=message)  # Sync
+
+send_message.short_description = _('Send Message')
+
+
+class MessageAdmin(admin.ModelAdmin):
+    list_display = tuple([f.name for f in Message._meta.fields])
+    date_hierarchy = 'created'
+    search_fields = ('mail_message_id',)
+    actions = [send_message, ]
+admin.site.register(Message, MessageAdmin)
+
+### Publication
+
+
+class PublicationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'publish_link', 'message_link', 'message_created')
+    list_filter = ('publish',)
+
+PublicationAdmin.publish_link = publish_link
+PublicationAdmin.message_link = message_link
+message_created = lambda self, obj: obj.message.created
+message_created.short_description = _(u"Created At")
+message_created.allow_tags = True
+PublicationAdmin.message_created = message_created
+
+admin.site.register(Publication, PublicationAdmin)
+
+#################
+# rsyslog
+try:
+    from rsyslog import SystemeventsAdmin, SystemeventspropertiesAdmin
+except:
+    pass

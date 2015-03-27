@@ -1,0 +1,14 @@
+# - paloma configuration
+# 
+#   - paloma : main bounce handler
+#
+#   COMMAND SYNTAX::
+#       %(FULL PATH to paloma_bouncer.py)% %(FULL  PATH to paloma based django application)% %(SWITCH)% %(SENDER)% %(RECIPIENT)%
+#      
+#       %(SWITCH)% 
+#               - main      : main bounce  
+#               - jail      : test bounce
+
+# Domain Bouncer
+{{ DOMAIN_TRANSPORT }} unix  -       n       n       -       -       pipe
+  flags=FDRq user={{ USER }} argv={{ BOUNCER }} {{ PROJECT_DIR }} main $sender $recipient --settings={{ SETTINGS_MODULE }}
