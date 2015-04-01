@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2014-05-12 15:48+0900\n"
+"POT-Creation-Date: 2015-04-01 13:32+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,39 +18,39 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: admin.py:45 models.py:430
+#: admin.py:45 models.py:465
 msgid "System User"
 msgstr "システムユーザー"
 
-#: admin.py:49 models.py:467 models.py:472 models.py:860
+#: admin.py:49 models.py:503 models.py:509 models.py:917
 msgid "Member"
 msgstr "登録アドレス"
 
-#: admin.py:53 models.py:421 models.py:474 models.py:869
+#: admin.py:53 models.py:455 models.py:511 models.py:926
 msgid "Circle"
 msgstr "サークル"
 
-#: admin.py:57 models.py:617 models.py:618 models.py:1004
+#: admin.py:57 models.py:655 models.py:656 models.py:1074
 msgid "Publish"
 msgstr "メール送信スケジュール"
 
-#: admin.py:61 models.py:852
+#: admin.py:61 models.py:908
 msgid "Message"
 msgstr "送信メール"
 
-#: admin.py:167
+#: admin.py:168
 msgid "Cicle Administrator"
 msgstr "サークル管理者"
 
-#: admin.py:168
+#: admin.py:169
 msgid "Cicle Administrators"
 msgstr "サークル管理者"
 
-#: admin.py:271
+#: admin.py:275
 msgid "Send Message"
 msgstr "メールを送信"
 
-#: admin.py:291
+#: admin.py:295
 msgid "Created At"
 msgstr "作成日時"
 
@@ -99,333 +99,369 @@ msgstr "同じパスワードを指定してください"
 msgid "mails.send_mail:%(backend)s: sent to %(to)s from %(from)s"
 msgstr "mails.send_mail:%(backend)s: %(from)s から %(to)s へ送信されました"
 
-#: models.py:51 models.py:71
+#: models.py:69 models.py:91
 msgid "Domain"
 msgstr "ドメイン"
 
-#: models.py:58
+#: models.py:77
 msgid "Description"
 msgstr "詳細"
 
-#: models.py:72
+#: models.py:92
 msgid "Domains"
 msgstr "ドメイン"
 
-#: models.py:92
+#: models.py:104
+msgid "Alias Address"
+msgstr ""
+
+#: models.py:109
+msgid "Alias Forward"
+msgstr ""
+
+#: models.py:114
 msgid "Mailbox"
 msgstr "メールボックス"
 
-#: models.py:137
+#: models.py:125 models.py:126
+msgid "Alias"
+msgstr ""
+
+#: models.py:162
 msgid "Owner Site Name"
 msgstr "オーナーサイト名"
 
-#: models.py:141
+#: models.py:166
 msgid "@Domain"
 msgstr "@ドメイン"
 
-#: models.py:147
+#: models.py:172
 msgid "URL"
 msgstr "URL"
 
-#: models.py:152
+#: models.py:177
 msgid "Site Operators"
 msgstr "サイト管理者"
 
-#: models.py:206 models.py:247 models.py:301
+#: models.py:232 models.py:276 models.py:339
 msgid "Owner Site"
 msgstr "サイト"
 
-#: models.py:209
+#: models.py:236
 msgid "Template Name"
 msgstr "メールテンプレート名"
 
-#: models.py:214
+#: models.py:241
 msgid "Template Subject"
 msgstr "メールテンプレート表題"
 
-#: models.py:218
+#: models.py:246
 msgid "Template Text"
 msgstr "メールテンプレート文面"
 
-#: models.py:241
+#: models.py:269
 msgid "Template"
 msgstr "メールテンプレート"
 
-#: models.py:242
+#: models.py:270
 msgid "Templates"
 msgstr "メールテンプレート"
 
-#: models.py:304
+#: models.py:343
 msgid "Circle Name"
 msgstr "サークル名"
 
-#: models.py:308
+#: models.py:347
+msgid "Circle Description"
+msgstr "詳細"
+
+#: models.py:350
 msgid "Circle Symbol"
 msgstr "サークルシンボル"
 
-#: models.py:309
+#: models.py:351
 msgid "Circle Symbol Help Text"
 msgstr "シンボルはメールアドレスとして使われます"
 
-#: models.py:313
+#: models.py:355
 msgid "Is Default Circle"
 msgstr "デフォルトサークル"
 
-#: models.py:314
+#: models.py:356
 msgid "Is Default Circle Help"
 msgstr "デフォルトのサークルです。デフォルトのサークルは１つだけです。"
 
-#: models.py:318
+#: models.py:360
 msgid "Is Moderated Circle"
 msgstr "管理サークル"
 
-#: models.py:319
+#: models.py:361
 msgid "Is Moderated Circle Help"
 msgstr "サークルの管理者が完全に管理しているサークルです(デフォルト)"
 
-#: models.py:324
+#: models.py:366
 msgid "Is Secret Circle"
 msgstr "秘密サークル"
 
-#: models.py:325
+#: models.py:367
 msgid "Is Secret Circle Help"
 msgstr "会員と管理者だけが存在を知っています。"
 
-#: models.py:422
+#: models.py:456
 msgid "Circles"
 msgstr "サークル"
 
-#: models.py:433 models.py:570
+#: models.py:468 models.py:608
 msgid "Forward address"
 msgstr "転送先"
 
-#: models.py:437
+#: models.py:472
 msgid "Actaive status"
 msgstr "状態"
 
-#: models.py:440
+#: models.py:475
 msgid "Bounce counts"
 msgstr "バウンス数"
 
-#: models.py:445
+#: models.py:480
 msgid "Opt-in Circle"
 msgstr "参加サークル"
 
-#: models.py:468
+#: models.py:504
 msgid "Members"
 msgstr "登録アドレス"
 
-#: models.py:477
+#: models.py:514
 msgid "Is Circle Admin"
 msgstr "サークルの管理者"
 
-#: models.py:480
+#: models.py:517
 msgid "Is Membership Admitted"
 msgstr "入会承認済"
 
-#: models.py:482
+#: models.py:519
 msgid "Is Membership Admitted Help"
 msgstr "管理者に入会承認されないとサークルにアクセスできません"
 
-#: models.py:488
+#: models.py:525
 msgid "Is Member Active"
 msgstr "入会承認済メンバー"
 
-#: models.py:493
+#: models.py:530
 msgid "Is User Active"
 msgstr "有効ユーザー"
 
-#: models.py:502
+#: models.py:539
 msgid "Circle Admin"
 msgstr "管理者"
 
-#: models.py:502
+#: models.py:539
 msgid "General Member"
 msgstr "会員"
 
-#: models.py:513
+#: models.py:550
 msgid "Membership"
 msgstr "サークル会員"
 
-#: models.py:514
+#: models.py:551
 msgid "Memberships"
 msgstr "サークル会員"
 
-#: models.py:527
+#: models.py:554
+msgid "Pending"
+msgstr "一時停止"
+
+#: models.py:555
+msgid "Scheduled"
+msgstr "予約済み"
+
+#: models.py:556
+msgid "Active"
+msgstr "送信中"
+
+#: models.py:557
+msgid "Finished"
+msgstr "完了"
+
+#: models.py:558
+msgid "Canceled"
+msgstr "取消"
+
+#: models.py:565
 msgid "Site"
 msgstr "サイト"
 
-#: models.py:530
+#: models.py:568
 msgid "Publisher"
 msgstr "メール送信主"
 
-#: models.py:535 models.py:853
+#: models.py:573 models.py:909
 msgid "Messages"
 msgstr "送信メール"
 
-#: models.py:538
+#: models.py:576
 msgid "Subject"
 msgstr "メール表題"
 
-#: models.py:541
+#: models.py:579
 msgid "Text"
 msgstr "本文"
 
-#: models.py:544
+#: models.py:582
 msgid "Target Circles"
 msgstr "対象サークル"
 
-#: models.py:547
+#: models.py:585
 msgid "Task ID"
 msgstr "バックグラウンドタスクID"
 
-#: models.py:552
+#: models.py:590
 msgid "Publish Status"
 msgstr "メールの送信状態"
 
-#: models.py:554
+#: models.py:592
 msgid "Publish Status Help"
 msgstr ""
 "送信状態をscheduledにすると、配信が予約されます。配信前(activeになる前)に"
 "cancelすると取消されます。"
 
-#: models.py:558
+#: models.py:596
 msgid "Time to Send"
 msgstr "送信開始時刻"
 
-#: models.py:559
+#: models.py:597
 msgid "Time to Send Help"
 msgstr "メールの送信希望時刻を指定します。ブランクですとすぐに配信します。"
 
-#: models.py:564
+#: models.py:602
 msgid "Task Activated Time"
 msgstr "タスク実行日時"
 
-#: models.py:565
+#: models.py:603
 msgid "Task Activated Time Help"
 msgstr "実際に実行された日時です"
 
-#: models.py:576
+#: models.py:614
 msgid "Optional Targetting"
 msgstr "追加ターゲティング"
 
-#: models.py:636
+#: models.py:675
 msgid "Journaled Datetime"
 msgstr "管理確認日時"
 
-#: models.py:637
+#: models.py:676
 msgid "Journaled datetime"
 msgstr "ジャーナル日時"
 
-#: models.py:647 models.py:751
+#: models.py:686 models.py:804
 msgid "Message Text"
 msgstr "メッセージ本文"
 
-#: models.py:650
+#: models.py:689
 msgid "Jailed Message"
 msgstr "エラー受信メール"
 
-#: models.py:661
+#: models.py:700
 msgid "Journal"
 msgstr "記録"
 
-#: models.py:662
+#: models.py:701
 msgid "Journals"
 msgstr "記録"
 
-#: models.py:763
+#: models.py:816
 msgid "Mail Checked"
 msgstr "既読メール"
 
-#: models.py:765
+#: models.py:818
 msgid "Created"
 msgstr "作成日時"
 
-#: models.py:766
+#: models.py:819
 msgid "Updated"
 msgstr "更新日時"
 
-#: models.py:767
+#: models.py:820
 msgid "SMTP Time"
 msgstr "SMTP送信日時"
 
-#: models.py:865
+#: models.py:922
 msgid "Provision Status"
 msgstr "アカウント管理状態"
 
-#: models.py:874
+#: models.py:931
 msgid "Inviter"
 msgstr "紹介者"
 
-#: models.py:879
+#: models.py:936
 msgid "Provision Prospect"
 msgstr "登録予定アドレス"
 
-#: models.py:884
+#: models.py:942
 msgid "Provision Secret"
 msgstr "パスワード"
 
-#: models.py:889
+#: models.py:949
 msgid "Provision Short Secret"
 msgstr "ショートパスワード"
 
-#: models.py:895
+#: models.py:955
 msgid "URL for Notice"
 msgstr "通知URL"
 
-#: models.py:899
+#: models.py:960
 msgid "Provision Secret Expired"
 msgstr "パスワード有効期限"
 
-#: models.py:904
+#: models.py:966
 msgid "Provision Try Datetime"
 msgstr "試行日時"
 
-#: models.py:909
+#: models.py:971
 msgid "Commit Datetime"
 msgstr "管理確認日時"
 
-#: models.py:969
+#: models.py:1038
 #, python-format
 msgid "Provision %(provision)s is sent for %(to)s"
 msgstr "Provision %(provision)s is sent for %(to)s"
 
-#: models.py:974
+#: models.py:1043
 msgid "Provision"
 msgstr "アカウント管理"
 
-#: models.py:975
+#: models.py:1044
 msgid "Provisions"
 msgstr "アカウント管理"
 
-#: models.py:1007
+#: models.py:1077
 msgid "Mail Message"
 msgstr "送信メール"
 
-#: tasks.py:181
+#: tasks.py:193
 #, python-format
 msgid "Processing Journal %(id)s Backend %(backend)s"
-msgstr  "Processing Journal %(id)s Backend %(backend)s"
+msgstr "Processing Journal %(id)s Backend %(backend)s"
 
-#: tasks.py:202
+#: tasks.py:215
 #, python-format
 msgid "No Action for Journal from=%(form)s to=%(to)s"
 msgstr "No Action for Journal from=%(form)s to=%(to)s"
 
-#: tasks.py:289
+#: tasks.py:311
 #, python-format
 msgid "task.enqueue_mail: id=%(id)d is delivered (%(async)s)"
-msgstr  "task.enqueue_mail: id=%(id)d is delivered (%(async)s)"
+msgstr "task.enqueue_mail: id=%(id)d is delivered (%(async)s)"
 
-#: tasks.py:325
+#: tasks.py:349
 #, python-format
 msgid "tasks.deliver_mail:successfully deliveredMessage.id = %d"
-msgstr  "tasks.deliver_mail:successfully deliveredMessage.id = %d"
+msgstr "tasks.deliver_mail:successfully deliveredMessage.id = %d"
 
-#: tasks.py:348
+#: tasks.py:372
 #, python-format
 msgid "send_templated_message:Messsage.id=%d id enqueued"
-msgstr  "send_templated_message:Messsage.id=%d id enqueued"
+msgstr "send_templated_message:Messsage.id=%d id enqueued"
 
-msgid "status"
-msgstr "状態"
+#~ msgid "status"
+#~ msgstr "状態"

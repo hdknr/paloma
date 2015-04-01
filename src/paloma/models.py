@@ -496,7 +496,8 @@ class Member(models.Model):
 
     def get_absolute_url(self):
         ''' Django API '''
-        return self.user.get_absolute_url() if self.user else None
+        # return self.user.get_absolute_url() if self.user else None
+        return None
 
     class Meta:
         verbose_name = _(u'Member')
@@ -539,8 +540,8 @@ class Membership(models.Model):
 
     def get_absolute_url(self):
         ''' Django API '''
-        if self.member and self.member.user:
-            return self.member.user.get_absolute_url()
+        # if self.member and self.member.user:
+        #     return self.member.user.get_absolute_url()
 
         return None
 
@@ -550,11 +551,11 @@ class Membership(models.Model):
         verbose_name_plural = _(u'Memberships')
 
 PUBLISH_STATUS = (
-    ('pending', 'pending'),
-    ('scheduled', 'scheduled'),
-    ('active', 'active'),
-    ('finished', 'finished'),
-    ('canceled', 'canceled'),)
+    ('pending', _('Pending')),
+    ('scheduled', _('Scheduled')),
+    ('active', _('Active')),
+    ('finished', _('Finished')),
+    ('canceled', _('Canceled')),)
 
 
 @deconstructible
