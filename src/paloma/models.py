@@ -496,8 +496,8 @@ class Member(models.Model):
 
     def get_absolute_url(self):
         ''' Django API '''
-        # return self.user.get_absolute_url() if self.user else None
         return None
+        # return self.user.get_absolute_url() if self.user else None
 
     class Meta:
         verbose_name = _(u'Member')
