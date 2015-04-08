@@ -576,7 +576,7 @@ class Publish(models.Model):
     subject = models.CharField(_(u'Subject'), max_length=101,)
     ''' Subject '''
 
-    text = models.TextField(_(u'Text'), max_length=100,)
+    text = models.TextField(_(u'Text'), )
     ''' Text '''
 
     circles = models.ManyToManyField(Circle, verbose_name=_(u'Target Circles'))
