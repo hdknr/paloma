@@ -159,27 +159,34 @@ class AbstractProfile(models.Model):
 class Site(models.Model):
     ''' Site
     '''
-    name = models.CharField(_(u'Owner Site Name'),
-                            max_length=100, db_index=True, unique=True)
+    name = models.CharField(
+        _(u'Owner Site Name'), help_text=_(u'Owner Site Name'),
+        max_length=100, db_index=True, unique=True)
     ''' Site Name '''
 
-    domain = models.CharField(_(u'@Domain'),
-                              max_length=100, default='localhost',
-                              db_index=True, unique=True,
-                              null=False, blank=False, )
+    domain = models.CharField(
+        _(u'@Domain'), help_text=_(u'@Domain'),
+        max_length=100, default='localhost',
+        db_index=True, unique=True, null=False, blank=False, )
     ''' @Domain'''
 
-    url = models.CharField(_(u'URL'),
-                           max_length=150, db_index=True,
-                           unique=True, default="/",)
+    url = models.CharField(
+        _(u'URL'), help_text=_(u'URL'),
+        max_length=150, db_index=True, unique=True, default="/",)
     ''' URL path '''
 
-    operators = models.ManyToManyField(User, verbose_name=_(u'Site Operators'))
+    operators = models.ManyToManyField(
+        User, help_text=_('User'), verbose_name=_(u'Site Operators'))
     ''' Site Operators '''
+
+    class Meta:
+        verbose_name = _('Site')
+        verbose_name_plural = _('Site')
+        unique_together = (('name', 'domain'), )
 
     @property
     def authority_address(self):
-        return "%s@%s" % (self.name, self.domain)
+        return "{0}@{1}".format(self.name, self.domain)
 
     @property
     def default_circle(self):
@@ -189,20 +196,16 @@ class Site(models.Model):
             #: if no, get default:
             name = getattr(settings, 'PALOMA_NAME', 'all')
             return self.circle_set.get_or_create(
-                site=self,
-                name=name,
-                symbol=name,
-            )[0]
+                site=self, name=name, symbol=name,)[0]
 
     def __unicode__(self):
         return self.domain
 
     @classmethod
     def app_site(cls):
-        return Site.objects.get_or_create(
-            name=getattr(settings, 'PALOMA_NAME', 'paloma'),
-            domain=getattr(settings, 'PALOMA_DEFAULT_DOMAIN', 'example.com'),
-        )[0]
+        name = getattr(settings, 'PALOMA_NAME', 'paloma')
+        domain = getattr(settings, 'PALOMA_DEFAULT_DOMAIN', 'example.com')
+        return Site.objects.get_or_create(name=name, domain=domain)[0]
 
 # Mesage Tempalte
 
