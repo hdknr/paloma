@@ -792,7 +792,7 @@ class Message(models.Model):
     ''' Recipient Member (member.circle is Sender)'''
 
     circle = models.ForeignKey(Circle, verbose_name=u'Circle',
-                               null=True, default=None,
+                               null=True, default=None, blank=True,
                                on_delete=models.SET_NULL)
     ''' Target Circle ( if None, Site's default circle is used.)'''
 
