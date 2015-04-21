@@ -149,20 +149,16 @@ admin.site.register(Targetting, TargettingAdmin)
 ### Circle
 
 
-class CirlceAdminMembershipForset(BaseInlineFormSet):
+class CirlceAdminMembershipFormset(BaseInlineFormSet):
 
     def get_queryset(self):
-        if not hasattr(self, '_queryset'):
-            qs = super(CirlceAdminMembershipForset,
-                       self).get_queryset().filter(is_admin=True)
-            self._queryset = qs
-        return self._queryset
+        return self.instance.membership_set.filter()
 
 
 class CircleAdminMembershipInline(admin.TabularInline):
 #class CircleAdminMembershipInline(admin.StackedInline):
     model = Membership
-    formset = CirlceAdminMembershipForset
+    formset = CirlceAdminMembershipFormset
     extra = 0
     raw_id_fields = ['member', ]
     verbose_name = _('Cicle Administrator')
@@ -200,6 +196,7 @@ class MemberAdmin(admin.ModelAdmin):
     inlines = [MembershipInline, ]
     raw_id_fields = ['user', ]
     search_fields = ('address', 'user__username',)
+    list_filter = ('is_active', )
 MemberAdmin.user_link = user_link
 admin.site.register(Member, MemberAdmin)
 
@@ -207,7 +204,6 @@ admin.site.register(Member, MemberAdmin)
 
 
 class PublishAdmin(admin.ModelAdmin):
-#    list_display=tuple([f.name for f in Publish._meta.fields ])
     list_display = (
         'id', 'site', 'publisher', 'subject', 'text',
         'task_id', 'status', 'dt_start', 'activated_at', )

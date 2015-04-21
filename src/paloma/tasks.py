@@ -265,7 +265,8 @@ def enqueue_mails_for_publish(
         - If called asynchronosly, enqueue_mail should be called synchronosly.
     '''
     log = current_task.get_logger()
-    member_exclude.update({'user': None, 'is_active': False, })
+    member_exclude.update({'user': None})
+    member_filter.update({'is_active': True})   # only for Active Address
     try:
         publish = Publish.objects.get(id=publish_id)
         for circle in publish.circles.all():
