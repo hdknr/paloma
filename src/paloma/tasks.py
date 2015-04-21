@@ -278,11 +278,6 @@ def enqueue_mails_for_publish(
                 t = enqueue_mail.apply_async(
                     (), {'mail_id': pub.message.id, })
 
-#                if async:
-#                    t=enqueue_mail.delay(mail_id=pub.message.id)
-#                else:
-#                    t=enqueue_mail.apply((),{'mail_obj':pub.message})
-#
                 pub.message.task_id = t.id
                 pub.message.save()
 
