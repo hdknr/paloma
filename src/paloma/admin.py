@@ -276,6 +276,7 @@ class MessageAdmin(admin.ModelAdmin):
     date_hierarchy = 'created'
     search_fields = ('mail_message_id',)
     actions = [send_message, ]
+    raw_id_fields = ['member', ]
 admin.site.register(Message, MessageAdmin)
 
 ### Publication
