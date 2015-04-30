@@ -171,14 +171,17 @@ class CircleAdmin(admin.ModelAdmin):
 admin.site.register(Circle, CircleAdmin)
 
 
-## Membership
+# Membership
+
+
 class MembershipAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'circle_link', 'member_link', 'user', 'is_admin',
         'is_member_active', 'is_user_active', 'is_admitted', )
-    list_filter = ('circle', 'is_admin',)
+    list_filter = ('circle', 'is_admin', 'is_admitted', )
     raw_id_fields = ['member', ]
     search_fields = ('member__address', 'member__user__username',)
+
 MembershipAdmin.member_link = member_link
 MembershipAdmin.circle_link = circle_link
 admin.site.register(Membership, MembershipAdmin)
