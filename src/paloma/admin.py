@@ -167,7 +167,7 @@ class CircleAdminMembershipInline(admin.TabularInline):
 
 class CircleAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Circle._meta.fields])
-    inlines = [CircleAdminMembershipInline]
+    # inlines = [CircleAdminMembershipInline]
 admin.site.register(Circle, CircleAdmin)
 
 
@@ -247,9 +247,34 @@ admin.site.register(Provision, ProvisionAdmin)
 ### Journal
 
 
+import traceback
+
 class JournalAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Journal._meta.fields])
     date_hierarchy = 'dt_created'
+    readonly_fields = ('body_text', )
+
+    def body_text(self, obj):
+
+        def _body(po):
+            payload = po.get_payload()
+            if isinstance(payload, list):
+                # po.is_multipart() == True
+                return "<hr/>".join([_body(p) for p in payload])
+            if isinstance(payload, basestring):
+                cs = po.get_content_charset() or po.get_charset()
+                if cs:
+                    return unicode(
+                        po.get_payload(decode=True), cs, "replace")
+
+                return payload
+            return ''
+
+        return _body(obj.mailobject())
+
+    body_text.short_description = _('Body Text')
+    body_text.allow_tags = True
+
 admin.site.register(Journal, JournalAdmin)
 
 ##############

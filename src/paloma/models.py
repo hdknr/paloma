@@ -697,7 +697,8 @@ class Journal(models.Model):
 
             :rtype: email.message.Message
         '''
-        return message_from_string(self.text)
+        # print ">>>>> type", type(self.text)
+        return message_from_string(self.text.encode('utf8'))
 
     class Meta:
         verbose_name = _(u'Journal')
