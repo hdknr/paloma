@@ -1,45 +1,48 @@
 # -*- coding: utf-8 -*-
 from django import template
-from django.db.models import Model,Manager
 from django.contrib.auth.models import User
-from django.template.base import Node,token_kwargs
+from django.template.base import Node, token_kwargs
 from django.utils import six        #: for Python 3
+from django.utils.translation import ugettext_lazy as _
 #
-import re
-
-from paloma.models import Site,Circle
+from paloma.models import Site, Circle
 
 # - logging
-import logging,traceback
+import logging
+import traceback
 log = logging.getLogger(__name__)
-warn = lambda : log.warn(traceback.format_exc() )
+warn = lambda: log.warn(traceback.format_exc())
 #
 register = template.Library()
 
+
 @register.assignment_tag
-def membership_for_user(circle,user):
+def membership_for_user(circle, user):
     try:
         return circle.membership_for_user(user)
-    except Exception,e:
-        return None     
+    except:
+        return None
+
 
 @register.assignment_tag
 def app_site():
     ''' application site '''
     return Site.app_site()
 
+
 @register.assignment_tag
 def app_circles(user=None):
     ''' application circles'''
     if user:
-        return Site.app_site().circle_set.accessible_list(user).order_by( '-is_default')
+        return Site.app_site().circle_set.accessible_list(
+            user).order_by('-is_default')
     return Site.app_site().circle_set.all().order_by('-is_default')
 
 
 ##
 
 class IfAdminNode(Node):
-    def __init__(self, user,circle,nodelist, extra_context=None):
+    def __init__(self, user, circle, nodelist, extra_context=None):
         self.nodelist = nodelist
         # var and name are legacy attributes, being left in case they are used
         # by third-party subclasses of this Node.
@@ -58,43 +61,58 @@ class IfAdminNode(Node):
         context.update(values)
 
         user = self.user_var.resolve(context)
-        circle = self.circle_var.resolve(context) 
+        circle = self.circle_var.resolve(context)
 
-        assert isinstance(user,User)
+        assert isinstance(user, User)
 
         if circle == '__any__' and Circle.objects.of_admin(user).exists():
-            output =  self.nodelist.render(context)
-        elif type(circle) == Circle and circle.is_admin(user) :
-            output =  self.nodelist.render(context)
-        else :
-            output =  ""
+            output = self.nodelist.render(context)
+
+        elif type(circle) == Circle and circle.is_admin(user):
+            output = self.nodelist.render(context)
+
+        else:
+            output = ""
+
         #:ブロックタグに挟まれているテンプレートをレンダリング
         #:権限があるときだけレンダリングする
-        
+
         context.pop()
         #:抜く
 
-        return  output
+        return output
+
 
 @register.tag(name='ifadmin')
-def tag_ifadmin(parser, token,*args,**kwargs):
+def tag_ifadmin(parser, token, *args, **kwargs):
     try:
         bits = token.split_contents()
         remaining_bits = bits[1:]
-        extra_context = token_kwargs(remaining_bits, parser, support_legacy=True)
+        extra_context = token_kwargs(
+            remaining_bits, parser, support_legacy=True)
 
-        user   = template.Variable(remaining_bits[0] )
-        circle = template.Variable(remaining_bits[1] ) 
-        
+        user = template.Variable(remaining_bits[0])
+        circle = template.Variable(remaining_bits[1])
+
         nodelist = parser.parse(('endifadmin',))
         #:終了ブロックまで読み込み
 
-        parser.delete_first_token()      
+        parser.delete_first_token()
         #:これを呼ばないと,{% endallowed%} が別のブロックタグとして解釈されてしまう
 
-        return IfAdminNode(user,circle,nodelist,extra_context=extra_context)
+        return IfAdminNode(user, circle, nodelist, extra_context=extra_context)
 
     except:
         print traceback.format_exc()
         pass
 
+
+@register.filter
+def task_status(value):
+    return {
+        u"PENDING": _('Task is pending'),
+        u"STARTED": _('Task has started'),
+        u"RETRY": _('Task has been retried'),
+        u"FAILURE": _('Task has failed'),
+        u"SUCCESS": _('Task has succeeded'),
+    }.get(value, '')
