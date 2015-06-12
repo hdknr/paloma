@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import Q
 from django.core.mail import get_connection
 from django.utils.timezone import now
 from django.db.models.loading import get_model as django_get_model
@@ -267,13 +268,15 @@ def enqueue_mails_for_publish(
         - If called asynchronosly, enqueue_mail should be called synchronosly.
     '''
     log = current_task.get_logger()
-    member_exclude.update({'user': None, })
+    # Never use: member_exclude.update({'user': None, })
     member_filter.update({'is_active': True})   # only for Active Address
+    default_ban = Q(address__endswith='@localhost') | Q(user__isnull=True)
+
     try:
         publish = Publish.objects.get(id=publish_id)
         for circle in publish.circles.all():
             for member in circle.member_set.filter(
-                    **member_filter).exclude(**member_exclude):
+                    **member_filter).exclude(default_ban):
                 pub = Publication.objects.publish(
                     publish, circle, member, signature)
 
@@ -285,6 +288,7 @@ def enqueue_mails_for_publish(
                 pub.message.save()
 
     except Exception, e:
+        print traceback.format_exc()
         log.error("enqueue_mails_for_publish():" + str(e))
         log.debug(traceback.format_exc().replace('\n', '/'))
 
