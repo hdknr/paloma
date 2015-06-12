@@ -4,8 +4,10 @@ from django.utils.timezone import now
 from django.db.models.loading import get_model as django_get_model
 from django.utils.translation import ugettext_lazy as _
 
-get_model = lambda p: django_get_model(*(p + '.').split('.')[:2])
-#: TODO: care of number of dots is larger then 1.
+
+def get_model(p):
+    # TODO: care of number of dots is larger then 1.
+    return django_get_model(*(p + '.').split('.')[:2])
 
 
 from celery import current_task, app
@@ -128,7 +130,7 @@ def process_error_mail(recipient, sender, journal_id):
                 id=int(param['message_id']),
                 publish__site__domain=param['domain'])
 
-            #:X-Failed-Recipients SHOULD be checked ?
+            # X-Failed-Recipients SHOULD be checked ?
             assert(
                 error_address is None or
                 error_address == msg.member.address)
@@ -145,8 +147,8 @@ def process_error_mail(recipient, sender, journal_id):
             pass
 
     except exceptions.AttributeError:
-        #:May be normal address..
-        #:Other handler will be called.
+        # May be normal address..
+        # Other handler will be called.
         return False
 
     return False
@@ -205,12 +207,12 @@ def process_journal(journal_id=None, *args, **kwargs):
         logger.debug("task.process_journal: this message is a jailed message.")
         return
 
-    #:Error Mail Handler
+    # Error Mail Handler
     if process_error_mail(journal.recipient, journal.sender, journal.id):
         logger.debug("task.process_journal:no error")
         return
 
-    #: actions
+    # actions
     if not process_action(journal.sender, journal.recipient, journal):
         logger.warn(_(u'No Action for Journal from=%(form)s to=%(to)s') % {
             "from": journal.sender, "to": journal.recipient,
@@ -265,7 +267,7 @@ def enqueue_mails_for_publish(
         - If called asynchronosly, enqueue_mail should be called synchronosly.
     '''
     log = current_task.get_logger()
-    member_exclude.update({'user': None})
+    member_exclude.update({'user': None, })
     member_filter.update({'is_active': True})   # only for Active Address
     try:
         publish = Publish.objects.get(id=publish_id)
@@ -341,7 +343,7 @@ def deliver_mail(mail_id=None, mail_class='paloma.Message',
             model_class=str(msg._meta),
         )
 
-        #:TODO: change the status
+        # TODO: change the status
         logger.debug(_('tasks.deliver_mail'
                        ':successfully delivered'
                        'Message.id = %d') % (msg.id))
@@ -352,7 +354,7 @@ def deliver_mail(mail_id=None, mail_class='paloma.Message',
             "mail_obj = %s mail_id = %s" % (str(mail_obj), mail_id))
         map(lambda msg: logger.debug(str(msg)),
             traceback.format_exc().split('\n'))
-        #:TODO:
+        # TODO:
         #   - error mail to Message
         #   - change status of Message
 
