@@ -4,6 +4,7 @@ from django.core.mail import get_connection
 from django.utils.timezone import now
 from django.db.models.loading import get_model as django_get_model
 from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import smart_str
 
 
 def get_model(p):
@@ -89,6 +90,35 @@ def send_email_in_string(return_path, recipients, message_string, **extended):
             "{0}:Failed to send email message to {1}, retrying.".format(
                 'send_email_instring', recipients))
         send_email_in_string.retry(exc=e)
+
+
+# @shared_task
+@task
+def send_raw_message(
+        return_path, recipients,
+        raw_message, *args, **kwargs):
+    '''
+    Send email using SMTP backend
+
+    :param str return_path: the Envelope From address
+    :param list(str) recipients: the Envelope To address
+    :param str raw_message:
+        string expression of Python :py:class:`email.message.Message` object
+    '''
+
+    try:
+        conn = get_connection(backend=BACKEND)
+        conn.open()     # django.core.mail.backends.smtp.EmailBackend
+        conn.connection.sendmail(
+            return_path, recipients, smart_str(raw_message))
+    except Exception, e:
+        # catching all exceptions b/c it could be any number of things
+        # depending on the backend
+        logger.debug(traceback.format_exc())
+        logger.warning(
+            "{0}:Failed to send email message to {1}, retrying.".format(
+                'send_email_instring', recipients))
+        send_raw_message.retry(exc=e)
 
 
 def process_error_mail(recipient, sender, journal_id):

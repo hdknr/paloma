@@ -7,8 +7,11 @@ from django.utils.translation import ugettext_lazy as _
 #
 from django.core.mail import get_connection
 from django.core.mail.message import (
-    EmailMessage,
+    EmailMessage, SafeMIMEText,
 )
+from email import Charset
+import uuid
+
 
 import logging
 logger = logging.getLogger('paloma')
@@ -57,3 +60,35 @@ def send_mail(subject, message, from_email, recipient_list,
             "to": str(recipient_list),
             "from": str(from_email)}
     )
+
+
+def create_message(
+        addr_from='me@hoo.com',
+        addr_to='you@bar.com',
+        message_id=None,
+        subject='subject',
+        body='body',
+        subtype='plain', encoding="utf-8"
+):
+    ''' Creating Message
+
+    :rtype: SafeMIMTExt(MIMEMixin, email.mime.text.MIMETex)
+
+    - `as_string()` method serializes into string
+    '''
+
+    message_id = message_id or uuid.uuid1().hex
+    if encoding == "shift_jis":
+        #: DoCoMo
+        #: TODO chekck message encoding and convert it
+        Charset.add_charset(
+            'shift_jis', Charset.QP, Charset.BASE64, 'shift_jis')
+        Charset.add_codec('shift_jis', 'cp932')
+
+    message = SafeMIMEText(body, subtype, encoding)
+    message['Subject'] = subject
+    message['From'] = addr_from
+    message['To'] = addr_to
+    message['Message-ID'] = message_id
+
+    return message
