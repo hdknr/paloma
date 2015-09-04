@@ -203,7 +203,7 @@ class MemberAdmin(admin.ModelAdmin):
 MemberAdmin.user_link = user_link
 admin.site.register(Member, MemberAdmin)
 
-### Publish
+# Publish
 
 
 class PublishAdmin(admin.ModelAdmin):
@@ -215,6 +215,7 @@ class PublishAdmin(admin.ModelAdmin):
         TargettingInline,
     ]
     date_hierarchy = 'dt_start'
+    raw_id_fields = ['publisher', ]
 
     def save_model(self, request, obj, form, change):
         ''' Saving...
@@ -244,10 +245,8 @@ class ProvisionAdmin(admin.ModelAdmin):
     raw_id_fields = ('member', )
 admin.site.register(Provision, ProvisionAdmin)
 
-### Journal
+# Journal
 
-
-import traceback
 
 class JournalAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Journal._meta.fields])

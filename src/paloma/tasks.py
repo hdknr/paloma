@@ -5,6 +5,7 @@ from django.utils.timezone import now
 from django.db.models.loading import get_model as django_get_model
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import smart_str
+import time
 
 
 def get_model(p):
@@ -307,6 +308,7 @@ def enqueue_mails_for_publish(
         for circle in publish.circles.all():
             for member in circle.member_set.filter(
                     **member_filter).exclude(default_ban):
+                time.sleep(20.0 / 1000.0)
                 pub = Publication.objects.publish(
                     publish, circle, member, signature)
 
