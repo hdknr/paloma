@@ -237,7 +237,7 @@ class Template(models.Model):
 
     name = models.CharField(
         _(u'Template Name'),
-        max_length=100, db_index=True,)
+        max_length=200, db_index=True,)
     ''' Notice Name'''
 
     subject = models.CharField(
@@ -246,8 +246,7 @@ class Template(models.Model):
     ''' Subject '''
 
     text = models.TextField(
-        _(u'Template Text'),
-        max_length=100, default='',)
+        _(u'Template Text'), default='',)
     ''' Text '''
 
     objects = TemplateManager()
