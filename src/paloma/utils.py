@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
-
+from django import VERSION
 from django.db.models.base import ModelBase
 from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now, get_current_timezone, make_aware
 from django.conf import settings
 from django.template import TemplateDoesNotExist
-from django.template.loader import find_template_loader
+
+if VERSION < (1, 8):
+    from django.template.loader import find_template_loader
+else:
+    from django.template import engine
+    find_template_loader = engine.Engine.get_default().template_loaders
+
 
 import random
 import os
