@@ -59,7 +59,7 @@ def send_email(message, **kwargs):
     except Exception, e:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
-        send_email.retry(exc=e)
+        # send_email.retry(exc=e)
         logger.debug(str(e) + traceback.format_exc().replace('\n', '/'))
         logger.warning(
             "tasks.send_email:Failed to send email message to %r, retrying.",
@@ -83,14 +83,14 @@ def send_email_in_string(return_path, recipients, message_string, **extended):
             recipients)
         return result
 
-    except Exception, e:
+    except:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
         logger.debug(traceback.format_exc())
         logger.warning(
             "{0}:Failed to send email message to {1}, retrying.".format(
                 'send_email_instring', recipients))
-        send_email_in_string.retry(exc=e)
+        # send_email_in_string.retry(exc=e)
 
 
 # @shared_task
@@ -112,14 +112,14 @@ def send_raw_message(
         conn.open()     # django.core.mail.backends.smtp.EmailBackend
         conn.connection.sendmail(
             return_path, recipients, smart_str(raw_message))
-    except Exception, e:
+    except:
         # catching all exceptions b/c it could be any number of things
         # depending on the backend
         logger.debug(traceback.format_exc())
         logger.warning(
             "{0}:Failed to send email message to {1}, retrying.".format(
                 'send_email_instring', recipients))
-        send_raw_message.retry(exc=e)
+        # send_raw_message.retry(exc=e)
 
 
 def process_error_mail(recipient, sender, journal_id):

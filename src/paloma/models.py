@@ -823,8 +823,7 @@ class Message(models.Model):
     smtped = models.DateTimeField(_(u'SMTP Time'),
                                   default=None, blank=True, null=True)
 
-    parameters = models.TextField(
-        blank=True, null=True, )
+    parameters = models.TextField(blank=True, null=True, )
     ''' extra parameters '''
 
     _context_cache = None
