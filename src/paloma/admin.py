@@ -71,30 +71,31 @@ if settings.DEBUG:
         )
         from djcelery.models import TaskMeta, TaskSetMeta
 
-        ### KombuQueue
+        # KombuQueue
         class KombuQueueAdmin(admin.ModelAdmin):
             list_display = tuple([f.name for f in KombuQueue._meta.fields])
         admin.site.register(KombuQueue, KombuQueueAdmin)
 
-        ### define __unicode__ to Queue class
+        # define __unicode__ to Queue class
         #
-        #def __unicode__(self):
+        # def __unicode__(self):
         #
         #   return self.name
 
-        ### KombuMessage
+        # KombuMessage
+
         class KombuMessageAdmin(admin.ModelAdmin):
             list_display = tuple([f.name for f in KombuMessage._meta.fields])
         admin.site.register(KombuMessage, KombuMessageAdmin)
 
-        ### TaskMeta
+        # TaskMeta
         class TaskMetaAdmin(admin.ModelAdmin):
             list_display = tuple([f.name for f in TaskMeta._meta.fields])
             list_filter = ('status',)
             date_hierarchy = 'date_done'
         admin.site.register(TaskMeta, TaskMetaAdmin)
 
-        ### TaskSetMeta
+        # TaskSetMeta
         class TaskSetMetaAdmin(admin.ModelAdmin):
             list_display = tuple([f.name for f in TaskSetMeta._meta.fields])
         admin.site.register(TaskSetMeta, TaskSetMetaAdmin)
@@ -103,14 +104,14 @@ if settings.DEBUG:
         print e
         pass
 
-### Domain
+# Domain
 
 
 class DomainAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Domain._meta.fields])
 admin.site.register(Domain, DomainAdmin)
 
-### Alias
+# Alias
 
 
 class AliasAdmin(admin.ModelAdmin):
@@ -133,7 +134,7 @@ class SiteAdmin(admin.ModelAdmin):
 
 admin.site.register(Site, SiteAdmin)
 
-### Targetting
+# Targetting
 
 
 class TargettingInline(generic.GenericTabularInline):
@@ -146,7 +147,7 @@ class TargettingAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Targetting._meta.fields])
 admin.site.register(Targetting, TargettingAdmin)
 
-### Circle
+# Circle
 
 
 class CirlceAdminMembershipFormset(BaseInlineFormSet):
@@ -155,8 +156,8 @@ class CirlceAdminMembershipFormset(BaseInlineFormSet):
         return self.instance.membership_set.filter()
 
 
+# class CircleAdminMembershipInline(admin.StackedInline):
 class CircleAdminMembershipInline(admin.TabularInline):
-#class CircleAdminMembershipInline(admin.StackedInline):
     model = Membership
     formset = CirlceAdminMembershipFormset
     extra = 0
@@ -191,7 +192,7 @@ class MembershipInline(admin.StackedInline):
     model = Membership
     extra = 0
 
-### Member
+# Member
 
 
 class MemberAdmin(admin.ModelAdmin):
@@ -238,7 +239,7 @@ class PublishAdmin(admin.ModelAdmin):
 admin.site.register(Publish, PublishAdmin)
 
 
-### Provision
+# Provision
 class ProvisionAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Provision._meta.fields])
     search_fields = ('prospect',)
@@ -278,14 +279,14 @@ admin.site.register(Journal, JournalAdmin)
 
 ##############
 
-### Template
+# Template
 
 
 class TemplateAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Template._meta.fields])
 admin.site.register(Template, TemplateAdmin)
 
-### Message
+# Message
 
 
 def send_message(modeladmin, request, queryset):
@@ -301,12 +302,14 @@ send_message.short_description = _('Send Message')
 class MessageAdmin(admin.ModelAdmin):
     list_display = tuple([f.name for f in Message._meta.fields])
     date_hierarchy = 'created'
-    search_fields = ('mail_message_id',)
+    search_fields = (
+        'mail_message_id', 'member__address', 'member__user__username', )
     actions = [send_message, ]
     raw_id_fields = ['member', ]
 admin.site.register(Message, MessageAdmin)
 
-### Publication
+
+# Publication
 
 
 class PublicationAdmin(admin.ModelAdmin):
@@ -325,6 +328,6 @@ admin.site.register(Publication, PublicationAdmin)
 #################
 # rsyslog
 try:
-    from rsyslog import SystemeventsAdmin, SystemeventspropertiesAdmin
+    from rsyslog import SystemeventsAdmin, SystemeventspropertiesAdmin  # NOQA
 except:
     pass
